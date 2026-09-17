@@ -1,9 +1,13 @@
-﻿{
+{
   "buildCommand": "npm run build --prefix frontend",
   "outputDirectory": "frontend/build",
   "rewrites": [
     {
-      "source": "/((?!api).*)",
+      "source": "/api/(.*)",
+      "destination": "/api/index.py"
+    },
+    {
+      "source": "/(.*)",
       "destination": "/index.html"
     }
   ]
