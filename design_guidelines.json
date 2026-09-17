@@ -1,0 +1,105 @@
+{
+  "brand_identity": {
+    "name": "Homes Finder",
+    "tagline": "Trusted Property Advisory for Smarter Real Estate Decisions in the UAE",
+    "alt_tagline": "Buy. Sell. Rent. Invest. With Confidence.",
+    "positioning": "High-value UAE Real Estate Advisory & Consultancy (Trust + Luxury + Investment Expertise + UAE Market Authority)",
+    "target_audience": "High-Net-Worth Individuals (HNWI), Expats, NRI & International Investors, Landlords, Tenants, Corporates, Developers, Family Offices"
+  },
+  "typography": {
+    "headings": {
+      "font_family": "'Cormorant Garamond', 'Playfair Display', serif",
+      "h1": "text-4xl sm:text-5xl lg:text-6xl font-serif font-bold tracking-tight text-slate-900 leading-[1.15]",
+      "h2": "text-2xl sm:text-3xl lg:text-4xl font-serif font-semibold tracking-tight text-slate-900",
+      "h3": "text-xl sm:text-2xl font-serif font-medium text-slate-900",
+      "h4": "text-lg sm:text-xl font-sans font-semibold text-slate-900"
+    },
+    "body": {
+      "font_family": "'Plus Jakarta Sans', 'Manrope', sans-serif",
+      "base": "text-base text-slate-700 leading-relaxed font-sans",
+      "small": "text-sm text-slate-600 font-sans",
+      "tiny_label": "text-xs font-semibold uppercase tracking-[0.2em] text-amber-600"
+    }
+  },
+  "colors": {
+    "primary": {
+      "deep_navy": "#0B132B",
+      "charcoal_navy": "#111827",
+      "midnight_slate": "#1C2541"
+    },
+    "secondary": {
+      "warm_gold": "#D4AF37",
+      "champagne_gold": "#C5A059",
+      "muted_gold": "#B8860B",
+      "light_gold_bg": "#FAF5E8"
+    },
+    "background": {
+      "light": "#FAFAFA",
+      "pure_white": "#FFFFFF",
+      "soft_gray": "#F3F4F6",
+      "dark_card": "#111827"
+    },
+    "text": {
+      "dark": "#111827",
+      "muted": "#4B5563",
+      "gold_accent": "#C5A059",
+      "light": "#F9FAFB"
+    },
+    "border": {
+      "subtle": "#E5E7EB",
+      "gold_subtle": "#E5C158",
+      "dark_border": "#374151"
+    }
+  },
+  "layout_and_spacing": {
+    "section_padding": "py-16 md:py-24 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto",
+    "grid_modes": {
+      "marketing_hero_bento": "grid grid-cols-1 md:grid-cols-12 gap-6 lg:gap-8",
+      "property_listing_grid": "grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8",
+      "dashboard_grid": "grid grid-cols-1 md:grid-cols-4 gap-6"
+    },
+    "card_padding": "p-6 sm:p-8"
+  },
+  "visual_enhancers": {
+    "border_glow": "border border-amber-500/20 shadow-[0_10px_30px_-15px_rgba(197,160,89,0.3)]",
+    "glassmorphism_nav": "bg-slate-900/90 backdrop-blur-md border-b border-amber-500/20 text-white z-50",
+    "gold_badge": "bg-amber-100 text-amber-900 text-xs font-bold px-3 py-1 rounded-full border border-amber-300 inline-flex items-center gap-1",
+    "roi_badge": "bg-emerald-950/80 text-emerald-400 text-xs font-bold px-3 py-1 rounded-md border border-emerald-700/50"
+  },
+  "components_strategy": {
+    "navbar": "Sticky header with logo ('Homes Finder' + UAE Flag subtle indicator), links (Buy, Rent, Off-Plan, Commercial, Investment Advisory, Services, About, Admin CMS), Phone & 'Book Consultation' Gold CTA button.",
+    "hero_search": "Luxury tabbed search box (BUY | RENT | COMMERCIAL | OFF-PLAN) featuring fields: Location dropdown (Palm Jumeirah, Downtown Dubai, Dubai Marina, Business Bay, Dubai Hills, DIFC, Ras Al Khaimah), Property Type (Villa, Penthouse, Apartment, Townhouse, Office), Bedrooms, Budget Range, RERA Status with instant Filter action.",
+    "trust_stats": "4 key metrics: 'AED 4.8B+ Transactions', '15+ Years UAE Expertise', '98% Client Satisfaction', '1,200+ Verified Luxury Properties'.",
+    "featured_properties": "Card layout showing high-res imagery, price (AED & USD conversion hint), location, beds/baths/sqft, yield/ROI badge, RERA Permit #, Direct WhatsApp enquiry & Detail view buttons.",
+    "roi_calculator": "Interactive investment advisory tool allowing investors to calculate estimated annual yield, capital appreciation, and payment plan breakdown.",
+    "detail_page": "High-impact photo gallery, key specs, investment highlights, interactive Google/Leaflet map location, floor plan viewer, direct lead form, mortgage/yield calculator, broker contact card.",
+    "admin_cms": "Comprehensive dashboard for properties CRUD (add, edit, delete listings with images, specs, price, status), lead CRM management (view/filter inquiries), and site settings.",
+    "floating_whatsapp": "Fixed bottom-right WhatsApp button passing active property title / page context directly to WhatsApp conversation."
+  },
+  "image_urls": {
+    "hero_villa": "https://images.unsplash.com/photo-1613977257365-aaae5a9817ff?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NzR8MHwxfHNlYXJjaHw0fHxsdXh1cnklMjBob3VzZSUyMHZpbGxhJTIwcG9vbCUyMGFyY2hpdGVjdHVyZXxlbnwwfHx8fDE3ODkzODgzNzB8MA&ixlib=rb-4.1.0&q=85",
+    "modern_mansion": "https://images.unsplash.com/photo-1580587771525-78b9dba3b914?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NzR8MHwxfHNlYXJjaHwxfHxsdXh1cnklMjBob3VzZSUyMHZpbGxhJTIwcG9vbCUyMGFyY2hpdGVjdHVyZXxlbnwwfHx8fDE3ODkzODgzNzB8MA&ixlib=rb-4.1.0&q=85",
+    "waterfront_villa": "https://images.unsplash.com/photo-1613977257363-707ba9348227?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NzR8MHwxfHNlYXJjaHwzfHxsdXh1cnklMjBob3VzZSUyMHZpbGxhJTIwcG9vbCUyMGFyY2hpdGVjdHVyZXxlbnwwfHx8fDE3ODkzODgzNzB8MA&ixlib=rb-4.1.0&q=85",
+    "contemporary_pool_house": "https://images.unsplash.com/photo-1613490493576-7fde63acd811?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NjA1NzR8MHwxfHNlYXJjaHwyfHxsdXh1cnklMjBob3VzZSUyMHZpbGxhJTIwcG9vbCUyMGFyY2hpdGVjdHVyZXxlbnwwfHx8fDE3ODkzODgzNzB8MA&ixlib=rb-4.1.0&q=85",
+    "penthouse_living_room": "https://images.unsplash.com/photo-1776362355123-ca966d36e29c?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxODd8MHwxfHNlYXJjaHwzfHxtb2Rlcm4lMjBza3lzY3JhcGVyJTIwbHV4dXJ5JTIwYXBhcnRtZW50JTIwaW50ZXJpb3J8ZW58MHx8fHwxNzg5Mzg4MzcwfDA&ixlib=rb-4.1.0&q=85",
+    "luxury_interior_dining": "https://images.unsplash.com/photo-1680416124510-5eae1beca412?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxODd8MHwxfHNlYXJjaHwxfHxtb2Rlcm4lMjBza3lzY3JhcGVyJTIwbHV4dXJ5JTIwYXBhcnRtZW50JTIwaW50ZXJpb3J8ZW58MHx8fHwxNzg5Mzg4MzcwfDA&ixlib=rb-4.1.0&q=85",
+    "cityview_penthouse": "https://images.unsplash.com/photo-1747380755783-61befe9b3da7?crop=entropy&cs=srgb&fm=jpg&ixid=M3w4NTYxODd8MHwxfHNlYXJjaHwyfHxtb2Rlcm4lMjBza3lzY3JhcGVyJTIwbHV4dXJ5JTIwYXBhcnRtZW50JTIwaW50ZXJpb3J8ZW58MHx8fHwxNzg5Mzg4MzcwfDA&ixlib=rb-4.1.0&q=85",
+    "advisor_team_presentation": "https://images.unsplash.com/photo-1757405909200-5f19f1f39eae?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2NzZ8MHwxfHNlYXJjaHwzfHxyZWFsJTIwZXN0YXRlJTIwZXhlY3V0aXZlJTIwdGVhbSUyMHByZXNlbnRhdGlvbnxlbnwwfHx8fDE3ODkzODgzNzN8MA&ixlib=rb-4.1.0&q=85",
+    "advisory_meeting": "https://images.unsplash.com/photo-1780733067347-3eb34d58f368?crop=entropy&cs=srgb&fm=jpg&ixid=M3w3NTY2NzZ8MHwxfHNlYXJjaHwyfHxyZWFsJTIwZXN0YXRlJTIwZXhlY3V0aXZlJTIwdGVhbSUyMHByZXNlbnRhdGlvbnxlbnwwfHx8fDE3ODkzODgzNzN8MA&ixlib=rb-4.1.0&q=85"
+  },
+  "instructions_to_main_agent": [
+    "Ensure all interactive buttons, links, search tabs, form inputs, modal triggers, and card actions have unique descriptive data-testid attributes (e.g., data-testid='hero-search-tab-buy', data-testid='property-card-whatsapp-btn-1').",
+    "Implement persistent floating WhatsApp button on bottom right with context awareness.",
+    "Header MUST NOT have transparent background when content scrolls under it. Use dark slate with glassmorphism (backdrop-blur-md bg-slate-900/90).",
+    "Display real UAE market data parameters: Prices in AED with USD conversion toggle, RERA/Trakheesi permit numbers, community location tags (Palm Jumeirah, Downtown, Dubai Marina, Business Bay).",
+    "Include an interactive ROI & Yield Calculator widget on Investment and Detail pages.",
+    "Include Admin CMS Dashboard with tabbed management for Property CRUD, CRM Leads, and Advisory Enquiries.",
+    "Ensure standard sonner toast notifications are used for form submissions, consultation bookings, and admin actions."
+  ],
+  "UNIVERSAL GUIDELINES FOR MAIN AGENT": {
+    "data_testid_rule": "MUST add data-testid attribute in kebab-case to all interactive and key elements.",
+    "spacing_rule": "Use 2x-3x generous spacing for sections. Avoid cramped components.",
+    "hover_contrast_rule": "Explicitly define text colors on hover (e.g. hover:bg-amber-500 hover:text-slate-950).",
+    "no_emoji_rule": "NEVER use emoji characters for UI icons. Use Lucide React icons instead."
+  }
+}

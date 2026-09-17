@@ -1,0 +1,56 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:6.0
+    container_name: homesfinder_mongo
+    restart: always
+    environment:
+      MONGO_INITDB_DATABASE: homesfinder_db
+    volumes:
+      - mongo_data:/data/db
+    networks:
+      - app-network
+
+  backend:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.backend
+    container_name: homesfinder_backend
+    restart: always
+    environment:
+      - MONGO_URL=mongodb://mongodb:27017
+      - DB_NAME=homesfinder_db
+      - DEFAULT_ADMIN_EMAIL=admin@homesfinder.ae
+      - DEFAULT_ADMIN_PASSWORD=Admin@HomesFinder2026
+      - ADMIN_EMAILS=admin@homesfinder.ae,hamid.aliuxb@gmail.com,hamid.a@homesfinder.ae,enquiries@homesfinder.ae
+      - OWNER_EMAIL=enquiries@homesfinder.ae
+      - CORS_ORIGINS=*
+    depends_on:
+      - mongodb
+    ports:
+      - "8000:8000"
+    networks:
+      - app-network
+
+  frontend:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile.frontend
+      args:
+        - REACT_APP_BACKEND_URL=
+    container_name: homesfinder_frontend
+    restart: always
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    networks:
+      - app-network
+
+volumes:
+  mongo_data:
+
+networks:
+  app-network:
+    driver: bridge
