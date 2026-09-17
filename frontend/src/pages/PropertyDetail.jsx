@@ -94,9 +94,13 @@ export default function PropertyDetail() {
           <div className="lg:col-span-2 space-y-8">
             <div>
               <div className="flex items-center gap-2 flex-wrap mb-3">
-                {property.featured && <Badge className="bg-amber-500 text-slate-950 hover:bg-amber-500">Featured</Badge>}
-                {property.status === "offplan" && <Badge className="bg-slate-900 text-white hover:bg-slate-900">Off-Plan</Badge>}
-                <Badge variant="outline" className="capitalize">{property.purpose === "rent" ? "For Rent" : "For Sale"}</Badge>
+                {property.featured && <Badge className="bg-amber-500 text-slate-950 hover:bg-amber-500 font-semibold">Featured</Badge>}
+                {property.status === "offplan" ? (
+                  <Badge className="bg-slate-900 text-white hover:bg-slate-900">Off-Plan</Badge>
+                ) : (
+                  <Badge className="bg-slate-800 text-slate-100 hover:bg-slate-800">Ready</Badge>
+                )}
+                <Badge variant="outline" className="capitalize font-medium">{property.purpose === "rent" ? "For Rent" : "For Sale"}</Badge>
                 {property.is_demo && <span className="text-[10px] font-bold uppercase tracking-wider bg-slate-900 text-amber-300 px-2 py-1 rounded">Demo Property</span>}
               </div>
               <h1 className="font-serif text-3xl sm:text-4xl font-bold text-slate-900">{property.title}</h1>
