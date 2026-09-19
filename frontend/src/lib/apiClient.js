@@ -8,6 +8,17 @@ export const api = axios.create({
   withCredentials: true,
 });
 
+api.interceptors.request.use((config) => {
+  try {
+    const token = localStorage.getItem("hf_token");
+    if (token) {
+      config.headers = config.headers || {};
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+  } catch (e) {}
+  return config;
+});
+
 export const fileUrl = (url) => {
   if (!url) return "";
   if (url.startsWith("http")) return url;

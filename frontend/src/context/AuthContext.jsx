@@ -31,11 +31,15 @@ export const AuthProvider = ({ children }) => {
 
   const login = async (email, password) => {
     const res = await api.post("/auth/login", { email, password });
+    if (res.data?.token) {
+      try { localStorage.setItem("hf_token", res.data.token); } catch {}
+    }
     setUser(res.data);
     return res.data;
   };
 
   const logout = async () => {
+    try { localStorage.removeItem("hf_token"); } catch {}
     try { await api.post("/auth/logout"); } catch {}
     setUser(null);
   };
