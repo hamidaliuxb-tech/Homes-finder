@@ -1,6 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 
-const SITE_KEY = process.env.REACT_APP_TURNSTILE_SITE_KEY || "";
+const SITE_KEY = process.env.REACT_APP_TURNSTILE_SITE_KEY || "0x4AAAAAAE8__XJJGbP1v6LP";
 
 // Cloudflare Turnstile widget. When no site key is configured (preview/dev),
 // renders a clear notice and returns a dev token so the flow is testable.
