@@ -14,6 +14,7 @@ import ROICalculator from "@/components/ROICalculator";
 import MortgageCalculator from "@/components/MortgageCalculator";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api, fileUrl, formatAED } from "@/lib/apiClient";
+import { getCachedProperties, fetchWithRetry } from "@/lib/cache";
 import { useSettings } from "@/context/SettingsContext";
 import { waLink } from "@/components/FloatingWhatsApp";
 
@@ -41,16 +42,26 @@ const ListBlock = ({ icon: Icon, title, items }) => {
 export default function PropertyDetail() {
   const { slug } = useParams();
   const { settings } = useSettings();
-  const [property, setProperty] = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [property, setProperty] = useState(() => {
+    return getCachedProperties().find((p) => p.slug === slug || p.id === slug) || null;
+  });
+  const [loading, setLoading] = useState(() => !property);
   const [active, setActive] = useState(0);
   const number = settings?.contact?.whatsapp || "971501184777";
   const phone = settings?.contact?.phone || "+971 50 118 4777";
 
   useEffect(() => {
-    setLoading(true);
-    window.scrollTo(0, 0);
-    api.get(`/properties/${slug}`).then((r) => { setProperty(r.data); setActive(0); }).catch(() => setProperty(null)).finally(() => setLoading(false));
+    fetchWithRetry(() => api.get(`/properties/${slug}`), 2, 2000)
+      .then((r) => {
+        if (r && r.data) {
+          setProperty(r.data);
+          setActive(0);
+        }
+      })
+      .catch(() => {
+        // Keep cached property if available
+      })
+      .finally(() => setLoading(false));
   }, [slug]);
 
   if (loading) return <Section><Skeleton className="h-[420px] rounded-2xl" /><Skeleton className="h-8 w-1/2 mt-6" /></Section>;
@@ -101,7 +112,11 @@ export default function PropertyDetail() {
                   <Badge className="bg-slate-800 text-slate-100 hover:bg-slate-800">Ready</Badge>
                 )}
                 <Badge variant="outline" className="capitalize font-medium">{property.purpose === "rent" ? "For Rent" : "For Sale"}</Badge>
-                {property.is_demo && <span className="text-[10px] font-bold uppercase tracking-wider bg-slate-900 text-amber-300 px-2 py-1 rounded">Demo Property</span>}
+                {property.developer ? (
+                  <Badge className="bg-slate-900 text-amber-300 border border-amber-500/30 font-medium">By {property.developer}</Badge>
+                ) : property.is_demo ? (
+                  <span className="text-[10px] font-bold uppercase tracking-wider bg-slate-900 text-amber-300 px-2 py-1 rounded">Demo Property</span>
+                ) : null}
               </div>
               <h1 className="font-serif text-3xl sm:text-4xl font-bold text-slate-900">{property.title}</h1>
               <p className="flex items-center gap-1.5 text-slate-500 mt-2"><MapPin className="h-4 w-4 text-amber-500" />{property.location}</p>

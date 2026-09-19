@@ -7,13 +7,37 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/lib/apiClient";
+import { getCachedProperties, setCachedProperties, fetchWithRetry } from "@/lib/cache";
 import { EMIRATES, COMMUNITIES, PROPERTY_TYPES, BEDROOM_OPTIONS } from "@/data/site";
+
+function filterCached(all, fixed, { emirate, community, ptype, beds, maxPrice, status, sort }) {
+  let list = (all || []).filter((p) => p.published !== false);
+  if (fixed?.purpose) list = list.filter((p) => p.purpose === fixed.purpose);
+  if (fixed?.status) list = list.filter((p) => p.status === fixed.status);
+  if (fixed?.category) list = list.filter((p) => p.category === fixed.category);
+  if (fixed?.featured) list = list.filter((p) => p.featured);
+
+  if (emirate && emirate !== "all") list = list.filter((p) => (p.emirate || "").toLowerCase() === emirate.toLowerCase());
+  if (community && community !== "all") list = list.filter((p) => (p.community || "").toLowerCase() === community.toLowerCase());
+  if (ptype && ptype !== "all") list = list.filter((p) => (p.property_type || "").toLowerCase() === ptype.toLowerCase());
+  if (beds && beds !== "all") {
+    const b = Number(beds);
+    if (!isNaN(b)) list = list.filter((p) => p.bedrooms === b);
+  }
+  if (maxPrice) {
+    const mp = Number(maxPrice);
+    if (!isNaN(mp)) list = list.filter((p) => p.price <= mp);
+  }
+  if (status && status !== "all") list = list.filter((p) => p.status === status);
+
+  if (sort === "price_asc") list.sort((a, b) => (a.price || 0) - (b.price || 0));
+  else if (sort === "price_desc") list.sort((a, b) => (b.price || 0) - (a.price || 0));
+  else if (sort === "newest") list.sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+  return list;
+}
 
 export default function PropertyGrid({ fixed = {}, title }) {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [showFilters, setShowFilters] = useState(false);
 
   const [emirate, setEmirate] = useState(searchParams.get("emirate") || "all");
   const [community, setCommunity] = useState(searchParams.get("community") || "all");
@@ -23,8 +47,23 @@ export default function PropertyGrid({ fixed = {}, title }) {
   const [status, setStatus] = useState(searchParams.get("status") || "all");
   const [sort, setSort] = useState("featured");
 
+  // Instant 0ms cache initialization
+  const [items, setItems] = useState(() => {
+    const cached = getCachedProperties();
+    return filterCached(cached, fixed, {
+      emirate: searchParams.get("emirate") || "all",
+      community: searchParams.get("community") || "all",
+      ptype: searchParams.get("property_type") || "all",
+      beds: searchParams.get("bedrooms") || "all",
+      maxPrice: searchParams.get("max_price") || "",
+      status: searchParams.get("status") || "all",
+      sort: "featured",
+    });
+  });
+  const [loading, setLoading] = useState(() => items.length === 0);
+  const [showFilters, setShowFilters] = useState(false);
+
   const load = useCallback(async () => {
-    setLoading(true);
     try {
       const params = { ...fixed, sort };
       if (emirate !== "all") params.emirate = emirate;
@@ -33,10 +72,17 @@ export default function PropertyGrid({ fixed = {}, title }) {
       if (beds !== "all") params.bedrooms = beds;
       if (maxPrice) params.max_price = maxPrice;
       if (status !== "all") params.status = status;
-      const res = await api.get("/properties", { params });
-      setItems(res.data);
+
+      const res = await fetchWithRetry(() => api.get("/properties", { params }), 2, 2000);
+      if (res && res.data) {
+        setItems(res.data);
+        // If we fetched an unfiltered listing, also cache properties
+        if (Object.keys(fixed).length === 0 && emirate === "all" && community === "all" && ptype === "all") {
+          setCachedProperties(res.data);
+        }
+      }
     } catch {
-      setItems([]);
+      // Retain already cached items on cold start failure
     } finally {
       setLoading(false);
     }

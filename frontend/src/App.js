@@ -18,6 +18,7 @@ import About from "@/pages/About";
 import Contact from "@/pages/Contact";
 import Legal from "@/pages/Legal";
 import PropertyDetail from "@/pages/PropertyDetail";
+import ScrollToTop from "@/components/ScrollToTop";
 
 import AdminLogin from "@/pages/admin/AdminLogin";
 import AdminDashboard from "@/pages/admin/AdminDashboard";
@@ -29,6 +30,7 @@ function App() {
       <AuthProvider>
         <SettingsProvider>
           <BrowserRouter>
+            <ScrollToTop />
             <Routes>
               <Route element={<Layout />}>
                 <Route path="/" element={<Home />} />

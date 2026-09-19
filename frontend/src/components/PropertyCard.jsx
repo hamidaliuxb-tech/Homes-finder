@@ -29,9 +29,14 @@ export default function PropertyCard({ property, index = 0 }) {
           {property.availability === "sold" && <Badge className="bg-red-600 text-white hover:bg-red-600">Sold</Badge>}
           {property.availability === "rented" && <Badge className="bg-slate-600 text-white hover:bg-slate-600">Rented</Badge>}
         </div>
-        {property.is_demo && (
+        {property.developer ? (
+          <span className="absolute bottom-3 left-3 text-[11px] font-semibold tracking-wide bg-slate-950/85 backdrop-blur-sm text-amber-300 px-2.5 py-1 rounded border border-amber-500/30 flex items-center gap-1 shadow-sm">
+            <span className="text-[9px] uppercase tracking-wider text-slate-300 font-normal">By</span>
+            {property.developer}
+          </span>
+        ) : property.is_demo ? (
           <span className="absolute bottom-3 left-3 text-[10px] font-bold uppercase tracking-wider bg-black/70 text-amber-300 px-2 py-1 rounded">Demo Property</span>
-        )}
+        ) : null}
         <span className="absolute top-3 right-3 text-[11px] font-medium bg-white/90 text-slate-700 px-2 py-1 rounded capitalize">
           {property.purpose === "rent" ? "For Rent" : "For Sale"}
         </span>
@@ -42,7 +47,14 @@ export default function PropertyCard({ property, index = 0 }) {
           <span className="text-lg font-bold text-slate-900" data-testid={`property-price-${property.id}`}>
             {formatAED(property.price)}<span className="text-xs font-normal text-slate-500">{period}</span>
           </span>
-          <span className="text-xs text-amber-600 font-medium">{property.property_type}</span>
+          <div className="flex items-center gap-1.5 text-right">
+            {property.developer && (
+              <span className="text-[11px] font-medium text-slate-500 truncate max-w-[130px]" title={property.developer}>
+                {property.developer}
+              </span>
+            )}
+            <span className="text-xs text-amber-600 font-medium shrink-0">{property.property_type}</span>
+          </div>
         </div>
         <Link to={`/property/${property.slug || property.id}`}>
           <h3 className="font-serif text-lg font-semibold text-slate-900 line-clamp-1 group-hover:text-amber-700 transition-colors">{property.title}</h3>

@@ -1,19 +1,28 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
 import { api } from "@/lib/apiClient";
+import { getCachedSettings, setCachedSettings, fetchWithRetry } from "@/lib/cache";
 
 const SettingsContext = createContext(null);
 
 export const SettingsProvider = ({ children }) => {
-  const [settings, setSettings] = useState(null);
+  // Initialize with cached settings immediately so UI is never blank
+  const [settings, setSettings] = useState(() => getCachedSettings());
 
   const load = async () => {
     try {
-      const res = await api.get("/settings");
-      setSettings(res.data);
-    } catch {}
+      const res = await fetchWithRetry(() => api.get("/settings"), 2, 2000);
+      if (res && res.data) {
+        setSettings(res.data);
+        setCachedSettings(res.data);
+      }
+    } catch {
+      // Retain existing cached settings on cold start error
+    }
   };
 
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+  }, []);
 
   return (
     <SettingsContext.Provider value={{ settings, setSettings, reload: load }}>

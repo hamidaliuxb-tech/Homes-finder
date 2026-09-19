@@ -15,6 +15,7 @@ import { Section, SectionHeading } from "@/components/Primitives";
 import { useSettings } from "@/context/SettingsContext";
 import { CATEGORY_CARDS } from "@/data/site";
 import { api } from "@/lib/apiClient";
+import { getCachedProperties, fetchWithRetry } from "@/lib/cache";
 import { waLink } from "@/components/FloatingWhatsApp";
 
 const HERO_IMG = "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?crop=entropy&cs=srgb&fm=jpg&q=85&w=2000";
@@ -33,12 +34,24 @@ const WHY = [
 export default function Home() {
   const navigate = useNavigate();
   const { settings } = useSettings();
-  const [featured, setFeatured] = React.useState([]);
+  // Instant 0ms cache initialization for featured properties
+  const [featured, setFeatured] = React.useState(() => {
+    return getCachedProperties().filter((p) => p.featured && p.published !== false).slice(0, 6);
+  });
   const number = settings?.contact?.whatsapp || "971501184777";
 
   React.useEffect(() => {
-    api.get("/properties", { params: { featured: true, limit: 6, sort: "featured" } })
-      .then((r) => setFeatured(r.data)).catch(() => {});
+    fetchWithRetry(
+      () => api.get("/properties", { params: { featured: true, limit: 6, sort: "featured" } }),
+      2,
+      2000
+    )
+      .then((r) => {
+        if (r && r.data && r.data.length > 0) {
+          setFeatured(r.data);
+        }
+      })
+      .catch(() => {});
   }, []);
 
   const stats = settings?.stats || [];

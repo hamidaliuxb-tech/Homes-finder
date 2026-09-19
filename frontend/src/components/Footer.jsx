@@ -23,10 +23,10 @@ export default function Footer() {
   const c = settings?.contact || {};
   const s = settings?.social || {};
   const socials = [
-    { icon: Linkedin, url: s.linkedin, key: "linkedin" },
-    { icon: Instagram, url: s.instagram, key: "instagram" },
-    { icon: Facebook, url: s.facebook, key: "facebook" },
-    { icon: Youtube, url: s.youtube, key: "youtube" },
+    { icon: Linkedin, url: s.linkedin || "https://www.linkedin.com", key: "linkedin" },
+    { icon: Instagram, url: s.instagram || "https://www.instagram.com", key: "instagram" },
+    { icon: Facebook, url: s.facebook || "https://www.facebook.com", key: "facebook" },
+    { icon: Youtube, url: s.youtube || "https://www.youtube.com", key: "youtube" },
   ];
 
   return (
