@@ -24,6 +24,12 @@ import AdminLogin from "@/pages/admin/AdminLogin";
 import AdminDashboard from "@/pages/admin/AdminDashboard";
 import ProtectedRoute from "@/pages/admin/ProtectedRoute";
 
+import Login from "@/pages/customer/Login";
+import Register from "@/pages/customer/Register";
+import Dashboard from "@/pages/customer/Dashboard";
+import CustomerRoute from "@/pages/customer/CustomerRoute";
+import { VerifyEmail, ResetPassword } from "@/pages/customer/AuthActions";
+
 function App() {
   return (
     <div className="App">
@@ -46,6 +52,15 @@ function App() {
                 <Route path="/property/:slug" element={<PropertyDetail />} />
                 <Route path="/legal/:slug" element={<Legal />} />
               </Route>
+
+              {/* Customer Auth & Portal Routes */}
+              <Route path="/login" element={<Login />} />
+              <Route path="/register" element={<Register />} />
+              <Route path="/verify-email" element={<VerifyEmail />} />
+              <Route path="/reset-password" element={<ResetPassword />} />
+              <Route path="/dashboard/*" element={<CustomerRoute><Dashboard /></CustomerRoute>} />
+
+              {/* Admin Routes */}
               <Route path="/admin/login" element={<AdminLogin />} />
               <Route path="/admin" element={<ProtectedRoute><AdminDashboard /></ProtectedRoute>} />
               <Route path="*" element={<Home />} />

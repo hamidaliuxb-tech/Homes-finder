@@ -125,3 +125,19 @@ def get_object(path: str) -> tuple[bytes, str]:
 
     raise FileNotFoundError(f"Object {path} not found")
 
+
+def save_object(filename: str, data: bytes) -> str:
+    safe = os.path.basename(filename)
+    dest = UPLOAD_DIR / safe
+    with open(dest, "wb") as f:
+        f.write(data)
+    return safe
+
+
+def get_object_path(path: str):
+    safe = os.path.basename(path)
+    dest = UPLOAD_DIR / safe
+    if dest.exists() and dest.is_file():
+        return str(dest)
+    return None
+

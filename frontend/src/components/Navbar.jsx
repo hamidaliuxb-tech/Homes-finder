@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
-import { Menu, X, Phone, Building2, ChevronRight } from "lucide-react";
+import { Menu, X, Phone, ChevronRight, LayoutDashboard, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSettings } from "@/context/SettingsContext";
+import { useAuth } from "@/context/AuthContext";
 
 const NAV = [
   { to: "/", label: "Home" },
@@ -21,8 +22,11 @@ export default function Navbar() {
   const [open, setOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
   const { settings } = useSettings();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
   const phone = settings?.contact?.phone || "+971 50 118 4777";
+  const isCustomer = user && user.role !== "admin";
+  const doLogout = async () => { await logout(); navigate("/"); };
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 20);
@@ -44,14 +48,14 @@ export default function Navbar() {
           </div>
         </Link>
 
-        <nav className="hidden lg:flex items-center gap-0.5 xl:gap-1">
+        <nav className="hidden xl:flex items-center gap-1">
           {NAV.map((n) => (
             <NavLink
               key={n.to}
               to={n.to}
               data-testid={`nav-link-${n.label.toLowerCase().replace(/\s+/g, "-")}`}
               className={({ isActive }) =>
-                `px-2 xl:px-3 py-1.5 xl:py-2 text-xs xl:text-sm font-medium rounded-md transition-colors whitespace-nowrap ${isActive ? "text-amber-400" : "text-slate-200 hover:text-amber-400"}`
+                `px-3 py-2 text-sm font-medium rounded-md transition-colors ${isActive ? "text-amber-400" : "text-slate-200 hover:text-amber-400"}`
               }
             >
               {n.label}
@@ -59,26 +63,38 @@ export default function Navbar() {
           ))}
         </nav>
 
-        <div className="hidden lg:flex items-center gap-2 xl:gap-3">
-          <a href={`tel:${phone.replace(/\s+/g, "")}`} className="hidden 2xl:flex items-center gap-2 text-sm text-slate-200 hover:text-amber-400" data-testid="navbar-phone">
+        <div className="hidden lg:flex items-center gap-3">
+          <a href={`tel:${phone.replace(/\s+/g, "")}`} className="flex items-center gap-2 text-sm text-slate-200 hover:text-amber-400" data-testid="navbar-phone">
             <Phone className="h-4 w-4" /> {phone}
           </a>
-          <Button
-            onClick={() => navigate("/contact")}
-            data-testid="navbar-book-consultation"
-            className="bg-amber-500 text-slate-950 hover:bg-amber-400 font-semibold rounded-full text-xs xl:text-sm px-3.5 xl:px-4 py-2"
-          >
-            Book a Consultation
-          </Button>
+          {isCustomer ? (
+            <>
+              <Button onClick={() => navigate("/dashboard")} data-testid="navbar-dashboard" className="bg-amber-500 text-slate-950 hover:bg-amber-400 font-semibold rounded-full text-xs xl:text-sm px-3.5 xl:px-4 py-2">
+                <LayoutDashboard className="h-4 w-4 mr-1.5" />My Dashboard
+              </Button>
+              <Button onClick={doLogout} variant="outline" data-testid="navbar-logout" className="border-white/30 bg-transparent text-white hover:bg-white hover:text-slate-950 rounded-full p-2 h-9 w-9">
+                <LogOut className="h-4 w-4" />
+              </Button>
+            </>
+          ) : (
+            <>
+              <Button onClick={() => navigate("/login")} data-testid="navbar-signin" variant="outline" className="border-white/30 bg-transparent text-white hover:bg-white hover:text-slate-950 font-semibold rounded-full text-xs xl:text-sm px-3.5 xl:px-4 py-2">
+                Sign In
+              </Button>
+              <Button onClick={() => navigate("/register")} data-testid="navbar-signup" className="bg-amber-500 text-slate-950 hover:bg-amber-400 font-semibold rounded-full text-xs xl:text-sm px-3.5 xl:px-4 py-2">
+                Sign Up
+              </Button>
+            </>
+          )}
         </div>
 
-        <button className="lg:hidden p-2 text-white" onClick={() => setOpen(!open)} data-testid="navbar-mobile-toggle" aria-label="Menu">
+        <button className="xl:hidden p-2 text-white" onClick={() => setOpen(!open)} data-testid="navbar-mobile-toggle" aria-label="Menu">
           {open ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
         </button>
       </div>
 
       {open && (
-        <div className="lg:hidden bg-slate-900 border-t border-amber-500/20 max-h-[80vh] overflow-y-auto" data-testid="mobile-menu">
+        <div className="xl:hidden bg-slate-900 border-t border-amber-500/20 max-h-[80vh] overflow-y-auto" data-testid="mobile-menu">
           <div className="px-4 py-3 space-y-1">
             {NAV.map((n) => (
               <NavLink
@@ -97,12 +113,25 @@ export default function Navbar() {
               <a href={`tel:${phone.replace(/\s+/g, "")}`} className="flex items-center gap-2 px-3 text-sm text-slate-200">
                 <Phone className="h-4 w-4" /> {phone}
               </a>
-              <Button onClick={() => { setOpen(false); navigate("/contact"); }} className="bg-amber-500 text-slate-950 hover:bg-amber-400 font-semibold w-full">
-                Book a Consultation
-              </Button>
-              <Button onClick={() => { setOpen(false); navigate("/sell"); }} variant="outline" className="border-amber-500/40 text-amber-400 hover:bg-amber-500 hover:text-slate-950 w-full">
-                List Your Property
-              </Button>
+              {isCustomer ? (
+                <>
+                  <Button onClick={() => { setOpen(false); navigate("/dashboard"); }} className="bg-amber-500 text-slate-950 hover:bg-amber-400 font-semibold w-full">
+                    <LayoutDashboard className="h-4 w-4 mr-1.5" />My Dashboard
+                  </Button>
+                  <Button onClick={() => { setOpen(false); doLogout(); }} variant="outline" className="border-amber-500/40 text-amber-400 hover:bg-amber-500 hover:text-slate-950 w-full">
+                    Logout
+                  </Button>
+                </>
+              ) : (
+                <>
+                  <Button onClick={() => { setOpen(false); navigate("/login"); }} variant="outline" className="border-white/30 text-white hover:bg-white hover:text-slate-950 font-semibold w-full">
+                    Sign In
+                  </Button>
+                  <Button onClick={() => { setOpen(false); navigate("/register"); }} className="bg-amber-500 text-slate-950 hover:bg-amber-400 font-semibold w-full">
+                    Sign Up / List Property
+                  </Button>
+                </>
+              )}
             </div>
           </div>
         </div>
