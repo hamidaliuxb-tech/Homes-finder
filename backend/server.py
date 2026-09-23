@@ -5,6 +5,7 @@ from dotenv import load_dotenv
 ROOT_DIR = Path(__file__).parent
 load_dotenv(ROOT_DIR / '.env')
 
+import asyncio
 import uuid
 import logging
 import re
@@ -397,15 +398,18 @@ async def create_lead(lead: LeadCreate):
     doc["status"] = "New"
     doc["created_at"] = now_iso()
     await db.leads.insert_one(dict(doc))
-    try:
-        recipient = route_recipient(doc.get("requirement", ""), "")
-        subject, html = build_lead_email(doc)
-        await send_email(to=recipient, subject=subject, html=html, reply_to=doc.get("email") or None)
-        if doc.get("email"):
-            asub, ahtml = build_enquiry_ack_email(doc)
-            await send_email(to=doc["email"], subject=asub, html=ahtml)
-    except Exception as e:
-        logger.error(f"Lead email failed: {e}")
+    async def _send_lead_notifications(d):
+        try:
+            recipient = route_recipient(d.get("requirement", ""), "")
+            subject, html = build_lead_email(d)
+            await send_email(to=recipient, subject=subject, html=html, reply_to=d.get("email") or None)
+            if d.get("email"):
+                asub, ahtml = build_enquiry_ack_email(d)
+                await send_email(to=d["email"], subject=asub, html=ahtml)
+        except Exception as e:
+            logger.error(f"Lead email failed: {e}")
+
+    asyncio.create_task(_send_lead_notifications(dict(doc)))
     return {k: v for k, v in doc.items() if k != "_id"}
 
 

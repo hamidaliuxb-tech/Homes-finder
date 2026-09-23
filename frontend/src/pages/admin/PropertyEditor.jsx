@@ -11,6 +11,13 @@ import ImageUploader from "@/components/ImageUploader";
 import { api } from "@/lib/apiClient";
 import { EMIRATES, COMMUNITIES, PROPERTY_TYPES } from "@/data/site";
 
+const TOP_DEVELOPERS = [
+  "Emaar Properties", "DAMAC Properties", "Nakheel", "Sobha Realty", "Aldar Properties",
+  "Meraas", "Danube Properties", "Binghatti Developers", "Omniyat", "Select Group",
+  "Ellington Properties", "MAG Property Development", "Deyaar", "Azizi Developments",
+  "Tiger Properties", "Al Habtoor Group", "Bloom Properties", "Arada",
+];
+
 const EMPTY = {
   title: "", purpose: "buy", category: "residential", property_type: "Apartment", status: "ready",
   availability: "available", emirate: "Dubai", community: "", location: "", price: 0, price_period: "",
@@ -91,9 +98,20 @@ export default function PropertyEditor({ open, onClose, property, onSaved }) {
             <div><Label>Emirate</Label>
               <Select value={form.emirate} onValueChange={(v) => { set("emirate", v); set("community", ""); }}><SelectTrigger className="mt-1.5" data-testid="pf-emirate"><SelectValue /></SelectTrigger>
                 <SelectContent>{EMIRATES.map((e) => <SelectItem key={e} value={e}>{e}</SelectItem>)}</SelectContent></Select></div>
-            <div><Label>Community</Label>
-              <Select value={form.community || "none"} onValueChange={(v) => set("community", v === "none" ? "" : v)}><SelectTrigger className="mt-1.5" data-testid="pf-community"><SelectValue placeholder="Select" /></SelectTrigger>
-                <SelectContent><SelectItem value="none">—</SelectItem>{communities.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}</SelectContent></Select></div>
+            <div>
+              <Label>Community / Area</Label>
+              <Input
+                list="admin-community-list"
+                value={form.community}
+                onChange={(e) => set("community", e.target.value)}
+                className="mt-1.5"
+                data-testid="pf-community"
+                placeholder="Select or enter community"
+              />
+              <datalist id="admin-community-list">
+                {communities.map((c) => <option key={c} value={c} />)}
+              </datalist>
+            </div>
             <div><Label>Location (display)</Label><Input value={form.location} onChange={(e) => set("location", e.target.value)} className="mt-1.5" data-testid="pf-location" placeholder="Dubai Marina, Dubai" /></div>
           </div>
 
@@ -111,7 +129,20 @@ export default function PropertyEditor({ open, onClose, property, onSaved }) {
           </div>
 
           <div className="grid sm:grid-cols-2 gap-4">
-            <div><Label>Developer</Label><Input value={form.developer} onChange={(e) => set("developer", e.target.value)} className="mt-1.5" data-testid="pf-developer" /></div>
+            <div>
+              <Label>Developer</Label>
+              <Input
+                list="admin-dev-list"
+                value={form.developer}
+                onChange={(e) => set("developer", e.target.value)}
+                className="mt-1.5"
+                data-testid="pf-developer"
+                placeholder="Select or enter developer"
+              />
+              <datalist id="admin-dev-list">
+                {TOP_DEVELOPERS.map((dev) => <option key={dev} value={dev} />)}
+              </datalist>
+            </div>
             <div><Label>Completion / Handover</Label><Input value={form.completion_date} onChange={(e) => set("completion_date", e.target.value)} className="mt-1.5" data-testid="pf-completion" placeholder="e.g. Q4 2027" /></div>
             <div><Label>Service Charges</Label><Input value={form.service_charges} onChange={(e) => set("service_charges", e.target.value)} className="mt-1.5" data-testid="pf-service" /></div>
             <div><Label>Payment Plan</Label><Input value={form.payment_plan} onChange={(e) => set("payment_plan", e.target.value)} className="mt-1.5" data-testid="pf-payment" /></div>

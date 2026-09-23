@@ -11,19 +11,27 @@ export default function ImageUploader({ images = [], onChange }) {
 
   const handleFiles = async (files) => {
     setUploading(true);
-    const uploaded = [];
-    for (const file of Array.from(files)) {
-      try {
-        const fd = new FormData();
-        fd.append("file", file);
-        const res = await api.post("/upload", fd, { headers: { "Content-Type": "multipart/form-data" } });
-        uploaded.push(res.data.url);
-      } catch {
-        toast.error(`Failed to upload ${file.name}`);
+    try {
+      const uploadPromises = Array.from(files).map(async (file) => {
+        try {
+          const fd = new FormData();
+          fd.append("file", file);
+          const res = await api.post("/upload", fd, { headers: { "Content-Type": "multipart/form-data" } });
+          return res.data.url;
+        } catch {
+          toast.error(`Failed to upload ${file.name}`);
+          return null;
+        }
+      });
+      const results = await Promise.all(uploadPromises);
+      const uploaded = results.filter(Boolean);
+      if (uploaded.length) {
+        onChange([...images, ...uploaded]);
+        toast.success(`${uploaded.length} image(s) uploaded`);
       }
+    } finally {
+      setUploading(false);
     }
-    if (uploaded.length) { onChange([...images, ...uploaded]); toast.success(`${uploaded.length} image(s) uploaded`); }
-    setUploading(false);
   };
 
   const addUrl = () => {

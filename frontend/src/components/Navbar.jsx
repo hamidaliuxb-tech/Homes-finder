@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { Link, NavLink, useNavigate } from "react-router-dom";
-import { Menu, X, Phone, ChevronRight, LayoutDashboard, LogOut } from "lucide-react";
+import { Menu, X, ChevronRight, LayoutDashboard, LogOut } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useSettings } from "@/context/SettingsContext";
 import { useAuth } from "@/context/AuthContext";
@@ -24,7 +24,6 @@ export default function Navbar() {
   const { settings } = useSettings();
   const { user, logout } = useAuth();
   const navigate = useNavigate();
-  const phone = settings?.contact?.phone || "+971 50 118 4777";
   const isCustomer = user && user.role !== "admin";
   const doLogout = async () => { await logout(); navigate("/"); };
 
@@ -64,12 +63,9 @@ export default function Navbar() {
         </nav>
 
         <div className="hidden lg:flex items-center gap-3">
-          <a href={`tel:${phone.replace(/\s+/g, "")}`} className="flex items-center gap-2 text-sm text-slate-200 hover:text-amber-400" data-testid="navbar-phone">
-            <Phone className="h-4 w-4" /> {phone}
-          </a>
           {isCustomer ? (
             <>
-              <Button onClick={() => navigate("/dashboard")} data-testid="navbar-dashboard" className="bg-amber-500 text-slate-950 hover:bg-amber-400 font-semibold rounded-full text-xs xl:text-sm px-3.5 xl:px-4 py-2">
+              <Button onClick={() => navigate("/dashboard")} data-testid="navbar-dashboard" className="bg-amber-500 text-slate-950 hover:bg-amber-400 font-semibold rounded-full text-xs xl:text-sm px-4 py-2">
                 <LayoutDashboard className="h-4 w-4 mr-1.5" />My Dashboard
               </Button>
               <Button onClick={doLogout} variant="outline" data-testid="navbar-logout" className="border-white/30 bg-transparent text-white hover:bg-white hover:text-slate-950 rounded-full p-2 h-9 w-9">
@@ -78,10 +74,10 @@ export default function Navbar() {
             </>
           ) : (
             <>
-              <Button onClick={() => navigate("/login")} data-testid="navbar-signin" variant="outline" className="border-white/30 bg-transparent text-white hover:bg-white hover:text-slate-950 font-semibold rounded-full text-xs xl:text-sm px-3.5 xl:px-4 py-2">
+              <Button onClick={() => navigate("/login")} data-testid="navbar-signin" variant="outline" className="border-white/30 bg-transparent text-white hover:bg-white hover:text-slate-950 font-semibold rounded-full text-xs xl:text-sm px-4 py-2">
                 Sign In
               </Button>
-              <Button onClick={() => navigate("/register")} data-testid="navbar-signup" className="bg-amber-500 text-slate-950 hover:bg-amber-400 font-semibold rounded-full text-xs xl:text-sm px-3.5 xl:px-4 py-2">
+              <Button onClick={() => navigate("/register")} data-testid="navbar-signup" className="bg-amber-500 text-slate-950 hover:bg-amber-400 font-semibold rounded-full text-xs xl:text-sm px-4 py-2">
                 Sign Up
               </Button>
             </>
@@ -110,9 +106,6 @@ export default function Navbar() {
               </NavLink>
             ))}
             <div className="pt-3 flex flex-col gap-2">
-              <a href={`tel:${phone.replace(/\s+/g, "")}`} className="flex items-center gap-2 px-3 text-sm text-slate-200">
-                <Phone className="h-4 w-4" /> {phone}
-              </a>
               {isCustomer ? (
                 <>
                   <Button onClick={() => { setOpen(false); navigate("/dashboard"); }} className="bg-amber-500 text-slate-950 hover:bg-amber-400 font-semibold w-full">

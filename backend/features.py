@@ -1,3 +1,4 @@
+import asyncio
 import os
 import re
 import uuid
@@ -168,11 +169,13 @@ def init_features(router, ctx):
         await notify(uid, "welcome", "Welcome to Homes Finder! Your account has been created.")
         user = await db.users.find_one({"id": uid})
         verify_url = f"{mail.PUBLIC_BASE_URL}/verify-email?token={vtoken}" if mail.PUBLIC_BASE_URL else None
-        try:
-            subject, html = mail.build_welcome_email(user, verify_url)
-            await mail.send_email(to=email, subject=subject, html=html)
-        except Exception as e:
-            logger.error(f"welcome email: {e}")
+        async def _send_welcome(u, vurl, em):
+            try:
+                subject, html = mail.build_welcome_email(u, vurl)
+                await mail.send_email(to=em, subject=subject, html=html)
+            except Exception as e:
+                logger.error(f"welcome email: {e}")
+        asyncio.create_task(_send_welcome(dict(user), verify_url, email))
         token = create_access_token(uid, email)
         set_auth_cookie(response, token)
         return {**public_user(user), "token": token}
@@ -193,8 +196,13 @@ def init_features(router, ctx):
         vtoken = secrets.token_urlsafe(32)
         await db.users.update_one({"id": user["id"]}, {"$set": {"verify_token": vtoken}})
         if mail.PUBLIC_BASE_URL:
-            subject, html = mail.build_verify_email(user, f"{mail.PUBLIC_BASE_URL}/verify-email?token={vtoken}")
-            await mail.send_email(to=user["email"], subject=subject, html=html)
+            async def _send_resend(u, vt):
+                try:
+                    subject, html = mail.build_verify_email(u, f"{mail.PUBLIC_BASE_URL}/verify-email?token={vt}")
+                    await mail.send_email(to=u["email"], subject=subject, html=html)
+                except Exception as e:
+                    logger.error(f"resend verification email: {e}")
+            asyncio.create_task(_send_resend(dict(user), vtoken))
         return {"success": True}
 
     @router.post("/auth/forgot-password")
@@ -204,11 +212,16 @@ def init_features(router, ctx):
         if user:
             token = secrets.token_urlsafe(32)
             await db.password_reset_tokens.insert_one({"token": token, "user_id": user["id"], "used": False,
-                                                       "expires_at": (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat(),
-                                                       "created_at": now_iso()})
+                                                        "expires_at": (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat(),
+                                                        "created_at": now_iso()})
             if mail.PUBLIC_BASE_URL:
-                subject, html = mail.build_password_reset_email(user, f"{mail.PUBLIC_BASE_URL}/reset-password?token={token}")
-                await mail.send_email(to=email, subject=subject, html=html)
+                async def _send_forgot(u, t, em):
+                    try:
+                        subject, html = mail.build_password_reset_email(u, f"{mail.PUBLIC_BASE_URL}/reset-password?token={t}")
+                        await mail.send_email(to=em, subject=subject, html=html)
+                    except Exception as e:
+                        logger.error(f"forgot password email: {e}")
+                asyncio.create_task(_send_forgot(dict(user), token, email))
         return {"success": True, "message": "If an account exists, a reset link has been sent."}
 
     @router.post("/auth/reset-password")
@@ -348,13 +361,15 @@ def init_features(router, ctx):
 
     async def _after_submit(prop, user, resubmit=False):
         await notify(user["id"], "submitted", f"Your property {prop.get('reference')} was submitted and is pending approval.")
-        try:
-            subject, html = mail.build_property_submitted_email(user, prop)
-            await mail.send_email(to=user["email"], subject=subject, html=html)
-            asubject, ahtml = mail.build_admin_new_property_email(prop, user)
-            await mail.send_email(to=mail.EMAIL_ADDRESSES["listing"], subject=asubject, html=ahtml)
-        except Exception as e:
-            logger.error(f"submit emails: {e}")
+        async def _send_submit_emails(u, p):
+            try:
+                subject, html = mail.build_property_submitted_email(u, p)
+                await mail.send_email(to=u["email"], subject=subject, html=html)
+                asubject, ahtml = mail.build_admin_new_property_email(p, u)
+                await mail.send_email(to=mail.EMAIL_ADDRESSES["listing"], subject=asubject, html=ahtml)
+            except Exception as e:
+                logger.error(f"submit emails: {e}")
+        asyncio.create_task(_send_submit_emails(dict(user), dict(prop)))
 
     @router.get("/my/notifications")
     async def my_notifications(user=Depends(get_current_user)):
@@ -447,11 +462,13 @@ def init_features(router, ctx):
         if prop.get("owner_id"):
             owner = await db.users.find_one({"id": prop["owner_id"]}, {"_id": 0})
             await notify(owner["id"], "approved", f"Your property {ref} has been approved and is now live.")
-            try:
-                subject, html = mail.build_property_approved_email(owner, prop)
-                await mail.send_email(to=owner["email"], subject=subject, html=html)
-            except Exception as e:
-                logger.error(f"approve email: {e}")
+            async def _send_approved(o, p):
+                try:
+                    subject, html = mail.build_property_approved_email(o, p)
+                    await mail.send_email(to=o["email"], subject=subject, html=html)
+                except Exception as e:
+                    logger.error(f"approve email: {e}")
+            asyncio.create_task(_send_approved(dict(owner), dict(prop)))
         return {"success": True, "slug": slug, "reference": ref}
 
     @router.post("/admin/properties/{prop_id}/reject")
@@ -465,11 +482,13 @@ def init_features(router, ctx):
         if prop.get("owner_id"):
             owner = await db.users.find_one({"id": prop["owner_id"]}, {"_id": 0})
             await notify(owner["id"], "rejected", f"Your property {prop.get('reference')} requires attention: {body.reason}")
-            try:
-                subject, html = mail.build_property_rejected_email(owner, prop, body.reason)
-                await mail.send_email(to=owner["email"], subject=subject, html=html)
-            except Exception as e:
-                logger.error(f"reject email: {e}")
+            async def _send_rejected(o, p, r):
+                try:
+                    subject, html = mail.build_property_rejected_email(o, p, r)
+                    await mail.send_email(to=o["email"], subject=subject, html=html)
+                except Exception as e:
+                    logger.error(f"reject email: {e}")
+            asyncio.create_task(_send_rejected(dict(owner), dict(prop), body.reason))
         return {"success": True}
 
     @router.post("/admin/properties/{prop_id}/request-changes")
@@ -483,11 +502,13 @@ def init_features(router, ctx):
         if prop.get("owner_id"):
             owner = await db.users.find_one({"id": prop["owner_id"]}, {"_id": 0})
             await notify(owner["id"], "changes_required", f"Changes requested for {prop.get('reference')}: {body.reason}")
-            try:
-                subject, html = mail.build_changes_required_email(owner, prop, body.reason)
-                await mail.send_email(to=owner["email"], subject=subject, html=html)
-            except Exception as e:
-                logger.error(f"changes email: {e}")
+            async def _send_changes(o, p, r):
+                try:
+                    subject, html = mail.build_changes_required_email(o, p, r)
+                    await mail.send_email(to=o["email"], subject=subject, html=html)
+                except Exception as e:
+                    logger.error(f"changes email: {e}")
+            asyncio.create_task(_send_changes(dict(owner), dict(prop), body.reason))
         return {"success": True}
 
     @router.post("/admin/properties/{prop_id}/status")

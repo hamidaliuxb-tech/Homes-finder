@@ -25,13 +25,27 @@ export default function Turnstile({ onToken }) {
   }, [onToken]);
 
   useEffect(() => {
+    let widgetId = null;
     if (ready && SITE_KEY && window.turnstile && ref.current) {
-      window.turnstile.render(ref.current, {
-        sitekey: SITE_KEY,
-        callback: (t) => onToken(t),
-        "expired-callback": () => onToken(""),
-      });
+      try {
+        ref.current.innerHTML = "";
+        widgetId = window.turnstile.render(ref.current, {
+          sitekey: SITE_KEY,
+          appearance: "always",
+          theme: "light",
+          callback: (t) => onToken(t),
+          "expired-callback": () => onToken(""),
+          "error-callback": () => onToken(""),
+        });
+      } catch (e) {
+        console.error("Turnstile render error:", e);
+      }
     }
+    return () => {
+      if (widgetId && window.turnstile?.remove) {
+        try { window.turnstile.remove(widgetId); } catch (_) {}
+      }
+    };
   }, [ready, onToken]);
 
   if (!SITE_KEY) {
