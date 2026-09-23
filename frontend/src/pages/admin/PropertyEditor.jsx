@@ -9,6 +9,7 @@ import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import ImageUploader from "@/components/ImageUploader";
 import { api } from "@/lib/apiClient";
+import { useSettings } from "@/context/SettingsContext";
 import { EMIRATES, COMMUNITIES, PROPERTY_TYPES } from "@/data/site";
 
 const TOP_DEVELOPERS = [
@@ -33,6 +34,7 @@ const toList = (s) => (s || "").split("\n").map((x) => x.trim()).filter(Boolean)
 const fromList = (a) => (a || []).join("\n");
 
 export default function PropertyEditor({ open, onClose, property, onSaved }) {
+  const { settings } = useSettings();
   const [form, setForm] = useState(EMPTY);
   const [saving, setSaving] = useState(false);
 
@@ -61,7 +63,8 @@ export default function PropertyEditor({ open, onClose, property, onSaved }) {
     }
   };
 
-  const communities = COMMUNITIES[form.emirate] || [];
+  const communities = settings?.options?.communities?.[form.emirate] || COMMUNITIES[form.emirate] || [];
+  const developers = settings?.options?.developers?.length ? settings.options.developers : TOP_DEVELOPERS;
 
   return (
     <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
@@ -140,7 +143,7 @@ export default function PropertyEditor({ open, onClose, property, onSaved }) {
                 placeholder="Select or enter developer"
               />
               <datalist id="admin-dev-list">
-                {TOP_DEVELOPERS.map((dev) => <option key={dev} value={dev} />)}
+                {developers.map((dev) => <option key={dev} value={dev} />)}
               </datalist>
             </div>
             <div><Label>Completion / Handover</Label><Input value={form.completion_date} onChange={(e) => set("completion_date", e.target.value)} className="mt-1.5" data-testid="pf-completion" placeholder="e.g. Q4 2027" /></div>

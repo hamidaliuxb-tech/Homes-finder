@@ -1,49 +1,115 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { toast } from "sonner";
-import { Loader2, Send, Save } from "lucide-react";
+import { Loader2, Send, Save, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import ImageUploader from "@/components/ImageUploader";
 import { api } from "@/lib/apiClient";
-import { EMIRATES, COMMUNITIES } from "@/data/site";
+import { useSettings } from "@/context/SettingsContext";
+import { EMIRATES, COMMUNITIES, PROPERTY_TYPES } from "@/data/site";
 
-const TYPES = ["Apartment", "Villa", "Townhouse", "Penthouse", "Studio", "Residential Building", "Office", "Retail", "Warehouse", "Land", "Commercial Building", "Other"];
-const AMENITIES = ["Balcony", "Parking", "Swimming Pool", "Gym", "Security", "Central AC", "Built-in Wardrobes", "Maids Room", "Garden", "Children's Play Area", "Sea View", "City View", "Marina View", "Covered Parking", "Concierge", "Elevator"];
-const TOP_DEVELOPERS = [
-  "Emaar Properties",
-  "DAMAC Properties",
-  "Nakheel",
-  "Sobha Realty",
-  "Aldar Properties",
-  "Meraas",
-  "Danube Properties",
-  "Binghatti Developers",
-  "Omniyat",
-  "Select Group",
-  "Ellington Properties",
-  "MAG Property Development",
-  "Deyaar",
-  "Azizi Developments",
-  "Tiger Properties",
-  "Al Habtoor Group",
-  "Bloom Properties",
-  "Arada",
+const DEFAULT_TYPES = [
+  "Apartment", "Villa", "Townhouse", "Penthouse", "Studio", "Residential Building",
+  "Office", "Retail", "Warehouse", "Land", "Commercial Building", "Other"
 ];
+
+const DEFAULT_DEVELOPERS = [
+  "Emaar Properties", "DAMAC Properties", "Nakheel", "Sobha Realty", "Aldar Properties",
+  "Meraas", "Danube Properties", "Binghatti Developers", "Omniyat", "Select Group",
+  "Ellington Properties", "MAG Property Development", "Deyaar", "Azizi Developments",
+  "Tiger Properties", "Al Habtoor Group", "Bloom Properties", "Arada"
+];
+
+const DEFAULT_AMENITIES = [
+  "Balcony", "Parking", "Swimming Pool", "Gym", "Security", "Central AC",
+  "Built-in Wardrobes", "Maids Room", "Garden", "Children's Play Area",
+  "Sea View", "City View", "Marina View", "Covered Parking", "Concierge", "Elevator"
+];
+
+function QuickAddModal({ open, onClose, title, placeholder, onAdd }) {
+  const [val, setVal] = useState("");
+  const [saving, setSaving] = useState(false);
+
+  const handleSubmit = async (e) => {
+    e?.preventDefault();
+    const clean = val.trim();
+    if (!clean) return;
+    setSaving(true);
+    try {
+      await onAdd(clean);
+      setVal("");
+      onClose();
+    } catch {
+      // error handled in onAdd
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open={open} onOpenChange={(o) => !o && onClose()}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle className="font-serif text-xl font-bold">{title}</DialogTitle>
+        </DialogHeader>
+        <form onSubmit={handleSubmit} className="space-y-4 pt-2">
+          <Input
+            value={val}
+            onChange={(e) => setVal(e.target.value)}
+            placeholder={placeholder}
+            autoFocus
+            className="h-11"
+          />
+          <div className="flex justify-end gap-2 pt-2">
+            <Button type="button" variant="outline" onClick={onClose}>Cancel</Button>
+            <Button type="submit" disabled={saving || !val.trim()} className="bg-amber-500 text-slate-950 hover:bg-amber-400 font-semibold">
+              {saving ? <Loader2 className="h-4 w-4 animate-spin mr-1" /> : <Plus className="h-4 w-4 mr-1" />}
+              Add &amp; Select
+            </Button>
+          </div>
+        </form>
+      </DialogContent>
+    </Dialog>
+  );
+}
 
 export default function AddProperty() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { settings, reload: reloadSettings } = useSettings();
+
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
   const [customType, setCustomType] = useState("");
-  const [isCustomCommunity, setIsCustomCommunity] = useState(false);
-  const [customCommunity, setCustomCommunity] = useState("");
   const [customAmenity, setCustomAmenity] = useState("");
+
+  const [dialogState, setDialogState] = useState({
+    open: false,
+    type: "",
+    title: "",
+    placeholder: "",
+  });
+
+  // Dynamic lists from backend settings.options
+  const [devList, setDevList] = useState(DEFAULT_DEVELOPERS);
+  const [typesList, setTypesList] = useState(DEFAULT_TYPES);
+  const [commMap, setCommMap] = useState(COMMUNITIES);
+  const [amenitiesList, setAmenitiesList] = useState(DEFAULT_AMENITIES);
+
+  useEffect(() => {
+    if (settings?.options) {
+      if (settings.options.developers?.length) setDevList(settings.options.developers);
+      if (settings.options.property_types?.length) setTypesList(settings.options.property_types);
+      if (settings.options.communities) setCommMap(settings.options.communities);
+      if (settings.options.amenities?.length) setAmenitiesList(settings.options.amenities);
+    }
+  }, [settings]);
 
   const [f, setF] = useState({
     title: "", description: "", purpose: "buy", property_type: "Apartment", emirate: "Dubai", community: "",
@@ -68,27 +134,70 @@ export default function AddProperty() {
           bathrooms: String(d.bathrooms ?? ""),
           area: String(d.area || ""),
         }));
-        if (d.property_type && !TYPES.slice(0, -1).includes(d.property_type)) {
+        if (d.property_type && !DEFAULT_TYPES.slice(0, -1).includes(d.property_type)) {
           set("property_type", "Other");
           setCustomType(d.property_type);
-        }
-        if (d.community && COMMUNITIES[d.emirate] && !COMMUNITIES[d.emirate].includes(d.community)) {
-          setIsCustomCommunity(true);
-          setCustomCommunity(d.community);
         }
       }).catch(() => {});
     }
   }, [id]);
 
+  const handleAddOption = async (val) => {
+    const { type } = dialogState;
+    try {
+      if (type === "developer") {
+        await api.post("/options/add", { category: "developers", value: val });
+        setDevList((prev) => (prev.includes(val) ? prev : [...prev, val]));
+        set("developer", val);
+        toast.success(`Developer "${val}" added & selected!`);
+      } else if (type === "property_type") {
+        await api.post("/options/add", { category: "property_types", value: val });
+        setTypesList((prev) => (prev.includes(val) ? prev : [...prev, val]));
+        set("property_type", val);
+        toast.success(`Property type "${val}" added & selected!`);
+      } else if (type === "community") {
+        await api.post("/options/add", { category: "communities", value: val, emirate: f.emirate });
+        setCommMap((prev) => {
+          const cur = prev[f.emirate] || [];
+          return { ...prev, [f.emirate]: cur.includes(val) ? cur : [...cur, val] };
+        });
+        set("community", val);
+        toast.success(`Community "${val}" added to ${f.emirate}!`);
+      }
+      reloadSettings();
+    } catch (e) {
+      toast.error(e?.response?.data?.detail || "Failed to add option");
+      throw e;
+    }
+  };
+
+  const handleAddAmenity = async () => {
+    const val = customAmenity.trim();
+    if (!val) return;
+    try {
+      await api.post("/options/add", { category: "amenities", value: val });
+      setAmenitiesList((prev) => (prev.includes(val) ? prev : [...prev, val]));
+      if (!f.amenities.includes(val)) {
+        set("amenities", [...f.amenities, val]);
+      }
+      setCustomAmenity("");
+      toast.success(`Amenity "${val}" added!`);
+      reloadSettings();
+    } catch {
+      if (!f.amenities.includes(val)) {
+        set("amenities", [...f.amenities, val]);
+        setCustomAmenity("");
+      }
+    }
+  };
+
   const toggleAmenity = (a) => set("amenities", f.amenities.includes(a) ? f.amenities.filter((x) => x !== a) : [...f.amenities, a]);
 
   const resolvedType = (f.property_type === "Other" && customType.trim()) ? customType.trim() : f.property_type;
-  const resolvedCommunity = isCustomCommunity ? customCommunity.trim() : (f.community === "__custom__" ? customCommunity.trim() : f.community);
 
   const payload = () => ({
     ...f,
     property_type: resolvedType,
-    community: resolvedCommunity,
     price: Number(f.price) || 0,
     bedrooms: Number(f.bedrooms) || 0,
     bathrooms: Number(f.bathrooms) || 0,
@@ -113,11 +222,19 @@ export default function AddProperty() {
     finally { setLoading(false); }
   };
 
-  const communities = COMMUNITIES[f.emirate] || [];
+  const communities = commMap[f.emirate] || [];
   const isSale = f.purpose === "buy";
 
   return (
     <div data-testid="add-property-page">
+      <QuickAddModal
+        open={dialogState.open}
+        onClose={() => setDialogState({ ...dialogState, open: false })}
+        title={dialogState.title}
+        placeholder={dialogState.placeholder}
+        onAdd={handleAddOption}
+      />
+
       <h1 className="font-serif text-3xl font-bold text-slate-900 mb-1">List Your Property</h1>
       <p className="text-slate-500 mb-6">Step {step} of 4 — {["Basics", "Details", "Photos & Amenities", "Contact & Review"][step - 1]}</p>
 
@@ -131,15 +248,33 @@ export default function AddProperty() {
                   <SelectContent><SelectItem value="buy">For Sale</SelectItem><SelectItem value="rent">For Rent</SelectItem></SelectContent>
                 </Select>
               </Fld>
-              <Fld label="Property Type">
+              <Fld
+                label="Property Type"
+                actionBtn={
+                  <button
+                    type="button"
+                    onClick={() => setDialogState({
+                      open: true,
+                      type: "property_type",
+                      title: "Add New Property Type",
+                      placeholder: "e.g. Duplex, Mansion, Hotel Apartment"
+                    })}
+                    className="text-xs font-semibold text-amber-600 hover:text-amber-700 flex items-center gap-0.5"
+                  >
+                    <Plus className="h-3 w-3" /> Add Type
+                  </button>
+                }
+              >
                 <Select value={f.property_type} onValueChange={(v) => set("property_type", v)}>
                   <SelectTrigger data-testid="ap-type"><SelectValue /></SelectTrigger>
-                  <SelectContent>{TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent>
+                  <SelectContent>
+                    {typesList.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}
+                  </SelectContent>
                 </Select>
                 {f.property_type === "Other" && (
                   <Input
                     className="mt-2"
-                    placeholder="Enter custom property type (e.g. Duplex, Mansion, Hotel Apartment)"
+                    placeholder="Enter custom property type (e.g. Duplex, Mansion)"
                     value={customType}
                     onChange={(e) => setCustomType(e.target.value)}
                     data-testid="ap-custom-type"
@@ -156,57 +291,69 @@ export default function AddProperty() {
           <>
             <div className="grid sm:grid-cols-3 gap-4">
               <Fld label="Emirate">
-                <Select value={f.emirate} onValueChange={(v) => { set("emirate", v); set("community", ""); setIsCustomCommunity(false); setCustomCommunity(""); }}>
+                <Select value={f.emirate} onValueChange={(v) => { set("emirate", v); set("community", ""); }}>
                   <SelectTrigger data-testid="ap-emirate"><SelectValue /></SelectTrigger>
                   <SelectContent>{EMIRATES.map((e) => <SelectItem key={e} value={e}>{e}</SelectItem>)}</SelectContent>
                 </Select>
               </Fld>
-              <Fld label="Community / Area">
-                {!isCustomCommunity ? (
-                  <Select value={f.community || "none"} onValueChange={(v) => {
-                    if (v === "__custom__") {
-                      setIsCustomCommunity(true);
-                    } else {
-                      set("community", v === "none" ? "" : v);
-                    }
-                  }}>
-                    <SelectTrigger data-testid="ap-community"><SelectValue placeholder="Select" /></SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="none">—</SelectItem>
-                      {communities.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-                      <SelectItem value="__custom__" className="text-amber-600 font-semibold">+ Custom Area / Other</SelectItem>
-                    </SelectContent>
-                  </Select>
-                ) : (
-                  <div className="space-y-1.5">
-                    <Input
-                      placeholder="Enter community / area name"
-                      value={customCommunity}
-                      onChange={(e) => setCustomCommunity(e.target.value)}
-                      data-testid="ap-custom-community"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => { setIsCustomCommunity(false); setCustomCommunity(""); set("community", ""); }}
-                      className="text-xs text-amber-600 hover:underline"
-                    >
-                      ← Back to predefined communities
-                    </button>
-                  </div>
-                )}
+              <Fld
+                label="Community / Area"
+                actionBtn={
+                  <button
+                    type="button"
+                    onClick={() => setDialogState({
+                      open: true,
+                      type: "community",
+                      title: `Add Community to ${f.emirate}`,
+                      placeholder: "e.g. Dubai South, Al Furjan, Meydan"
+                    })}
+                    className="text-xs font-semibold text-amber-600 hover:text-amber-700 flex items-center gap-0.5"
+                  >
+                    <Plus className="h-3 w-3" /> Add Community
+                  </button>
+                }
+              >
+                <div className="relative">
+                  <Input
+                    list="ap-community-list"
+                    value={f.community}
+                    onChange={(e) => set("community", e.target.value)}
+                    placeholder="Select or enter area"
+                    data-testid="ap-community"
+                  />
+                  <datalist id="ap-community-list">
+                    {communities.map((c) => <option key={c} value={c} />)}
+                  </datalist>
+                </div>
               </Fld>
               <Fld label="Location (display)"><Input data-testid="ap-location" value={f.location} onChange={(e) => set("location", e.target.value)} placeholder="e.g. Dubai Marina, Dubai" /></Fld>
               <Fld label="Building Name"><Input value={f.building_name} onChange={(e) => set("building_name", e.target.value)} /></Fld>
-              <Fld label="Developer Name">
+              <Fld
+                label="Developer Name"
+                actionBtn={
+                  <button
+                    type="button"
+                    onClick={() => setDialogState({
+                      open: true,
+                      type: "developer",
+                      title: "Add New Developer Name",
+                      placeholder: "e.g. Sobha Hartland, Danube Properties"
+                    })}
+                    className="text-xs font-semibold text-amber-600 hover:text-amber-700 flex items-center gap-0.5"
+                  >
+                    <Plus className="h-3 w-3" /> Add Developer
+                  </button>
+                }
+              >
                 <Input
                   list="ap-developer-list"
                   value={f.developer}
                   onChange={(e) => set("developer", e.target.value)}
-                  placeholder="Select or enter developer (e.g. Emaar, DAMAC)"
+                  placeholder="Select or enter developer"
                   data-testid="ap-developer"
                 />
                 <datalist id="ap-developer-list">
-                  {TOP_DEVELOPERS.map((dev) => <option key={dev} value={dev} />)}
+                  {devList.map((dev) => <option key={dev} value={dev} />)}
                 </datalist>
               </Fld>
               <Fld label="Status">
@@ -241,12 +388,12 @@ export default function AddProperty() {
                 <span className="text-xs text-slate-500">{f.amenities.length} selected</span>
               </div>
               <div className="mt-2 grid grid-cols-2 sm:grid-cols-3 gap-2" data-testid="ap-amenities">
-                {AMENITIES.map((a) => (
+                {amenitiesList.map((a) => (
                   <label key={a} className={`flex items-center gap-2 rounded-lg border px-3 py-2 text-sm cursor-pointer transition-colors ${f.amenities.includes(a) ? "border-amber-400 bg-amber-50" : "border-slate-200"}`}>
                     <Checkbox checked={f.amenities.includes(a)} onCheckedChange={() => toggleAmenity(a)} />{a}
                   </label>
                 ))}
-                {f.amenities.filter((a) => !AMENITIES.includes(a)).map((a) => (
+                {f.amenities.filter((a) => !amenitiesList.includes(a)).map((a) => (
                   <label key={a} className="flex items-center justify-between rounded-lg border border-amber-400 bg-amber-50 px-3 py-2 text-sm cursor-pointer">
                     <span className="flex items-center gap-2">
                       <Checkbox checked={true} onCheckedChange={() => toggleAmenity(a)} />{a}
@@ -263,10 +410,7 @@ export default function AddProperty() {
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
                       e.preventDefault();
-                      if (customAmenity.trim() && !f.amenities.includes(customAmenity.trim())) {
-                        set("amenities", [...f.amenities, customAmenity.trim()]);
-                        setCustomAmenity("");
-                      }
+                      handleAddAmenity();
                     }
                   }}
                   className="max-w-md h-10"
@@ -275,14 +419,9 @@ export default function AddProperty() {
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => {
-                    if (customAmenity.trim() && !f.amenities.includes(customAmenity.trim())) {
-                      set("amenities", [...f.amenities, customAmenity.trim()]);
-                      setCustomAmenity("");
-                    }
-                  }}
+                  onClick={handleAddAmenity}
                 >
-                  + Add Amenity
+                  <Plus className="h-4 w-4 mr-1" /> Add Amenity
                 </Button>
               </div>
             </div>
@@ -312,7 +451,7 @@ export default function AddProperty() {
                 <div><span className="text-slate-400">Purpose:</span> {isSale ? "For Sale" : "For Rent"}</div>
                 <div><span className="text-slate-400">Type:</span> {resolvedType}</div>
                 <div><span className="text-slate-400">Developer:</span> {f.developer || "—"}</div>
-                <div><span className="text-slate-400">Location:</span> {f.location || resolvedCommunity || "—"}</div>
+                <div><span className="text-slate-400">Location:</span> {f.location || f.community || "—"}</div>
                 <div><span className="text-slate-400">Price:</span> AED {Number(f.price || 0).toLocaleString()}</div>
                 <div><span className="text-slate-400">Beds/Baths:</span> {f.bedrooms || 0}/{f.bathrooms || 0}</div>
                 <div><span className="text-slate-400">Photos:</span> {f.images.length}</div>
@@ -336,4 +475,12 @@ export default function AddProperty() {
   );
 }
 
-const Fld = ({ label, children }) => (<div><Label className="text-slate-700 text-sm">{label}</Label><div className="mt-1.5">{children}</div></div>);
+const Fld = ({ label, actionBtn, children }) => (
+  <div>
+    <div className="flex items-center justify-between mb-1.5">
+      <Label className="text-slate-700 text-sm">{label}</Label>
+      {actionBtn}
+    </div>
+    <div>{children}</div>
+  </div>
+);

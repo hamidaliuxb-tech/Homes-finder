@@ -269,10 +269,58 @@ DEMO_PROPERTIES = [
     },
 ]
 
+DEFAULT_DEVELOPERS = [
+    "Emaar Properties", "DAMAC Properties", "Nakheel", "Sobha Realty", "Aldar Properties",
+    "Meraas", "Danube Properties", "Binghatti Developers", "Omniyat", "Select Group",
+    "Ellington Properties", "MAG Property Development", "Deyaar", "Azizi Developments",
+    "Tiger Properties", "Al Habtoor Group", "Bloom Properties", "Arada",
+]
+
+DEFAULT_PROPERTY_TYPES = [
+    "Apartment", "Villa", "Townhouse", "Penthouse", "Studio", "Residential Building",
+    "Office", "Retail", "Warehouse", "Land", "Commercial Building", "Other"
+]
+
+DEFAULT_COMMUNITIES = {
+    "Dubai": [
+        "Downtown Dubai", "Dubai Marina", "Business Bay", "Jumeirah", "Palm Jumeirah",
+        "Arabian Ranches", "Dubai Hills", "JVC", "Jumeirah Lake Towers", "Dubai Creek Harbour",
+        "Meydan", "MBR City", "Dubai South", "Al Furjan", "Bluewaters Island"
+    ],
+    "Abu Dhabi": ["Yas Island", "Saadiyat Island", "Al Reem Island", "Al Raha Beach", "Al Maryah Island"],
+    "Sharjah": ["Al Majaz", "Aljada", "Tilal City", "Al Mamsha"],
+    "Ajman": ["Al Nuaimiya", "Emirates City", "Al Rashidiya"],
+    "Ras Al Khaimah": ["Al Hamra Village", "Al Marjan Island", "Mina Al Arab"],
+    "Fujairah": ["Al Faseel", "Dibba"],
+    "Umm Al Quwain": ["Al Salamah", "Umm Al Quwain Marina"],
+}
+
+DEFAULT_AMENITIES = [
+    "Balcony", "Parking", "Swimming Pool", "Gym", "Security", "Central AC",
+    "Built-in Wardrobes", "Maids Room", "Garden", "Children's Play Area",
+    "Sea View", "City View", "Marina View", "Covered Parking", "Concierge", "Elevator"
+]
+
+DEFAULT_WHY_US = [
+    {"title": "Professional Advisory", "desc": "Property decisions supported by structured market analysis."},
+    {"title": "Transparency", "desc": "Clear communication without misleading promises."},
+    {"title": "Market Knowledge", "desc": "Local understanding of UAE property markets."},
+    {"title": "Investment Focus", "desc": "We look beyond the property and consider its investment potential."},
+    {"title": "End-to-End Support", "desc": "From property selection to transaction completion."},
+    {"title": "Long-Term Relationship", "desc": "We aim to build lasting client relationships rather than one-time transactions."},
+]
+
 DEFAULT_SETTINGS = {
+    "announcement": {
+        "enabled": False,
+        "text": "",
+        "link": "",
+        "link_text": "Learn More →",
+    },
     "hero": {
         "headline": "Your Property. Your Investment. Your Future.",
         "subheadline": "Buy, sell, rent and invest with confidence through expert property advisory and market knowledge across the UAE.",
+        "image_url": "https://images.unsplash.com/photo-1512453979798-5ea266f8880c?crop=entropy&cs=srgb&fm=jpg&q=85&w=2000",
     },
     "stats_heading": "UAE Real Estate Expertise",
     "stats": [
@@ -281,6 +329,13 @@ DEFAULT_SETTINGS = {
         {"label": "Satisfied Clients", "value": "250+"},
         {"label": "Coverage", "value": "UAE-Wide"},
     ],
+    "why_us": DEFAULT_WHY_US,
+    "options": {
+        "developers": DEFAULT_DEVELOPERS,
+        "property_types": DEFAULT_PROPERTY_TYPES,
+        "communities": DEFAULT_COMMUNITIES,
+        "amenities": DEFAULT_AMENITIES,
+    },
     "contact": {
         "phone": "+971 50 118 4777",
         "whatsapp": "971501184777",

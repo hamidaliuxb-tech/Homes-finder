@@ -56,6 +56,7 @@ export default function Home() {
 
   const stats = settings?.stats || [];
   const hero = settings?.hero || {};
+  const heroImg = hero.image_url || HERO_IMG;
 
   const schema = {
     "@context": "https://schema.org", "@type": "RealEstateAgent",
@@ -76,7 +77,7 @@ export default function Home() {
       {/* HERO */}
       <section className="relative bg-slate-950 text-white" data-testid="hero-section">
         <div className="absolute inset-0">
-          <img src={HERO_IMG} alt="UAE luxury real estate" className="h-full w-full object-cover opacity-40" />
+          <img src={heroImg} alt="UAE luxury real estate" className="h-full w-full object-cover opacity-40" />
           <div className="absolute inset-0 bg-gradient-to-b from-slate-950/80 via-slate-950/60 to-slate-950/90" />
         </div>
         <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 pt-20 pb-16 md:pt-28 md:pb-20">
@@ -162,13 +163,16 @@ export default function Home() {
       <Section>
         <SectionHeading center eyebrow="Why Homes Finder" title="Why Choose Us?" subtitle="A property advisory partner focused on trust, transparency and long-term client success." />
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {WHY.map((w, i) => (
-            <div key={i} className="bg-white border border-slate-200 rounded-2xl p-7 hover:shadow-lg transition-shadow" data-testid={`why-card-${i}`}>
-              <w.icon className="h-9 w-9 text-amber-500 mb-4" />
-              <h3 className="font-serif text-lg font-semibold text-slate-900">{w.title}</h3>
-              <p className="mt-2 text-sm text-slate-600 leading-relaxed">{w.desc}</p>
-            </div>
-          ))}
+          {(settings?.why_us && settings.why_us.length > 0 ? settings.why_us : WHY).map((w, i) => {
+            const Icon = WHY[i]?.icon || ShieldCheck;
+            return (
+              <div key={i} className="bg-white border border-slate-200 rounded-2xl p-7 hover:shadow-lg transition-shadow" data-testid={`why-card-${i}`}>
+                <Icon className="h-9 w-9 text-amber-500 mb-4" />
+                <h3 className="font-serif text-lg font-semibold text-slate-900">{w.title}</h3>
+                <p className="mt-2 text-sm text-slate-600 leading-relaxed">{w.desc}</p>
+              </div>
+            );
+          })}
         </div>
       </Section>
 

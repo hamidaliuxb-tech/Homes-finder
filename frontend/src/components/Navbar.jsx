@@ -38,6 +38,16 @@ export default function Navbar() {
       className={`fixed top-0 left-0 right-0 z-50 border-b border-amber-500/20 bg-slate-900/95 backdrop-blur-md text-white transition-shadow ${scrolled ? "shadow-lg shadow-black/30" : ""}`}
       data-testid="main-navbar"
     >
+      {settings?.announcement?.enabled && settings?.announcement?.text && (
+        <div className="bg-gradient-to-r from-amber-500 via-amber-400 to-amber-500 text-slate-950 py-1.5 px-4 text-center text-xs font-semibold flex items-center justify-center gap-2" data-testid="navbar-announcement">
+          <span>{settings.announcement.text}</span>
+          {settings.announcement.link && (
+            <Link to={settings.announcement.link} className="underline hover:opacity-80 transition-opacity">
+              {settings.announcement.link_text || "Learn More →"}
+            </Link>
+          )}
+        </div>
+      )}
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8 h-16 lg:h-20">
         <Link to="/" className="flex items-center gap-2.5 group" data-testid="navbar-logo">
           <img src="/homes-finder-icon.png" alt="Homes Finder" className="h-9 w-auto" />

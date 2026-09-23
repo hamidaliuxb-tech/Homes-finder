@@ -437,13 +437,38 @@ async def delete_lead(lead_id: str, admin=Depends(require_admin)):
     return {"success": True}
 
 
-# ---------------- Settings ----------------
+class AddOptionReq(BaseModel):
+    category: str
+    value: str
+    emirate: Optional[str] = "Dubai"
+
+
+class DeleteOptionReq(BaseModel):
+    category: str
+    value: str
+    emirate: Optional[str] = "Dubai"
+
+
+# ---------------- Settings & Options ----------------
 @api_router.get("/settings")
 async def get_settings():
     doc = await db.settings.find_one({"id": "site"}, {"_id": 0})
     if not doc:
         doc = {"id": "site", **DEFAULT_SETTINGS}
         await db.settings.insert_one(dict(doc))
+    else:
+        updated = False
+        for k, v in DEFAULT_SETTINGS.items():
+            if k not in doc:
+                doc[k] = v
+                updated = True
+            elif isinstance(v, dict) and isinstance(doc.get(k), dict):
+                for sub_k, sub_v in v.items():
+                    if sub_k not in doc[k]:
+                        doc[k][sub_k] = sub_v
+                        updated = True
+        if updated:
+            await db.settings.replace_one({"id": "site"}, dict(doc), upsert=True)
     return doc
 
 
@@ -453,6 +478,68 @@ async def update_settings(body: dict, admin=Depends(require_admin)):
     body.pop("_id", None)
     await db.settings.replace_one({"id": "site"}, body, upsert=True)
     return {k: v for k, v in body.items() if k != "_id"}
+
+
+@api_router.get("/options")
+async def get_options():
+    doc = await db.settings.find_one({"id": "site"}, {"_id": 0})
+    if not doc or "options" not in doc:
+        return DEFAULT_SETTINGS["options"]
+    options = doc["options"]
+    for k, v in DEFAULT_SETTINGS["options"].items():
+        if k not in options:
+            options[k] = v
+    return options
+
+
+@api_router.post("/options/add")
+async def add_option(body: AddOptionReq, user=Depends(get_current_user)):
+    val = body.value.strip()
+    if not val:
+        raise HTTPException(status_code=400, detail="Option value cannot be empty")
+    doc = await db.settings.find_one({"id": "site"}, {"_id": 0})
+    if not doc:
+        doc = {"id": "site", **DEFAULT_SETTINGS}
+    options = doc.get("options") or dict(DEFAULT_SETTINGS["options"])
+
+    if body.category == "communities":
+        emirate = (body.emirate or "Dubai").strip()
+        comm_map = options.get("communities") or dict(DEFAULT_SETTINGS["options"]["communities"])
+        if emirate not in comm_map:
+            comm_map[emirate] = []
+        if val not in comm_map[emirate]:
+            comm_map[emirate].append(val)
+        options["communities"] = comm_map
+    elif body.category in ["developers", "property_types", "amenities"]:
+        cat_list = list(options.get(body.category) or DEFAULT_SETTINGS["options"].get(body.category, []))
+        if val not in cat_list:
+            cat_list.append(val)
+        options[body.category] = cat_list
+    else:
+        raise HTTPException(status_code=400, detail=f"Invalid option category: {body.category}")
+
+    doc["options"] = options
+    await db.settings.replace_one({"id": "site"}, doc, upsert=True)
+    return {"success": True, "options": options, "added": val}
+
+
+@api_router.delete("/options/delete")
+async def delete_option(body: DeleteOptionReq, admin=Depends(require_admin)):
+    val = body.value.strip()
+    doc = await db.settings.find_one({"id": "site"}, {"_id": 0})
+    if not doc or "options" not in doc:
+        return {"success": True}
+    options = doc["options"]
+    if body.category == "communities":
+        emirate = (body.emirate or "Dubai").strip()
+        if emirate in options.get("communities", {}):
+            options["communities"][emirate] = [c for c in options["communities"][emirate] if c != val]
+    elif body.category in ["developers", "property_types", "amenities"]:
+        if body.category in options:
+            options[body.category] = [x for x in options[body.category] if x != val]
+    doc["options"] = options
+    await db.settings.replace_one({"id": "site"}, doc, upsert=True)
+    return {"success": True, "options": options}
 
 
 # ---------------- File Upload / Serve (local disk) ----------------

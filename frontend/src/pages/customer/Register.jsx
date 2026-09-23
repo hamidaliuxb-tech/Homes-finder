@@ -1,7 +1,7 @@
 import React, { useState, useCallback } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { Loader2 } from "lucide-react";
+import { Loader2, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -20,6 +20,8 @@ export default function Register() {
   const navigate = useNavigate();
   const [f, setF] = useState({ name: "", email: "", mobile: "", country: "United Arab Emirates", emirate: "Dubai",
     location: "", password: "", confirm: "", company: "", user_type: "Property Owner", preferred_contact: "" });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirm, setShowConfirm] = useState(false);
   const [consent, setConsent] = useState(false);
   const [token, setToken] = useState("");
   const [loading, setLoading] = useState(false);
@@ -72,8 +74,46 @@ export default function Register() {
               </Select>
             </Field>
             <Field label="Location / Area *"><Input data-testid="reg-location" value={f.location} onChange={set("location")} required className="bg-slate-800 border-slate-700 text-white" /></Field>
-            <Field label="Password *"><Input data-testid="reg-password" type="password" value={f.password} onChange={set("password")} required className="bg-slate-800 border-slate-700 text-white" /></Field>
-            <Field label="Confirm Password *"><Input data-testid="reg-confirm" type="password" value={f.confirm} onChange={set("confirm")} required className="bg-slate-800 border-slate-700 text-white" /></Field>
+            <Field label="Password *">
+              <div className="relative">
+                <Input
+                  data-testid="reg-password"
+                  type={showPassword ? "text" : "password"}
+                  value={f.password}
+                  onChange={set("password")}
+                  required
+                  className="bg-slate-800 border-slate-700 text-white pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </Field>
+            <Field label="Confirm Password *">
+              <div className="relative">
+                <Input
+                  data-testid="reg-confirm"
+                  type={showConfirm ? "text" : "password"}
+                  value={f.confirm}
+                  onChange={set("confirm")}
+                  required
+                  className="bg-slate-800 border-slate-700 text-white pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirm(!showConfirm)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors"
+                  aria-label={showConfirm ? "Hide password" : "Show password"}
+                >
+                  {showConfirm ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
+            </Field>
             <Field label="Company Name"><Input data-testid="reg-company" value={f.company} onChange={set("company")} className="bg-slate-800 border-slate-700 text-white" /></Field>
             <Field label="User Type">
               <Select value={f.user_type} onValueChange={(v) => setF({ ...f, user_type: v })}>

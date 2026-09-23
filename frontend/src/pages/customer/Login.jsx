@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { Building2, Loader2 } from "lucide-react";
+import { Building2, Loader2, Eye, EyeOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -14,6 +14,7 @@ export default function Login() {
   const navigate = useNavigate();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [forgot, setForgot] = useState(false);
 
@@ -59,7 +60,24 @@ export default function Login() {
           {!forgot && (
             <div>
               <Label className="text-slate-300">Password</Label>
-              <Input data-testid="login-password" type="password" value={password} onChange={(e) => setPassword(e.target.value)} className="mt-1.5 h-11 bg-slate-800 border-slate-700 text-white" required />
+              <div className="relative mt-1.5">
+                <Input
+                  data-testid="login-password"
+                  type={showPassword ? "text" : "password"}
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="h-11 bg-slate-800 border-slate-700 text-white pr-10"
+                  required
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              </div>
             </div>
           )}
           <Button type="submit" disabled={loading} data-testid="login-submit" className="w-full h-12 bg-amber-500 text-slate-950 hover:bg-amber-400 font-semibold">
