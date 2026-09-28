@@ -212,8 +212,8 @@ def init_features(router, ctx):
             return {"success": True, "message": "If an account exists, a reset link has been sent."}
 
         user = await db.users.find_one({"email": {"$regex": f"^{re.escape(email)}$", "$options": "i"}})
-        admin_emails_list = [e.strip().lower() for e in (os.environ.get("ADMIN_EMAILS") or "admin@homesfinder.ae,hamid.aliuxb@gmail.com,hamid.a@homesfinder.ae,enquiries@homesfinder.ae").split(",") if e.strip()]
-        default_admin = (os.environ.get("DEFAULT_ADMIN_EMAIL") or "admin@homesfinder.ae").strip().lower()
+        admin_emails_list = [e.strip().lower() for e in (os.environ.get("ADMIN_EMAILS") or "hamid.a@homesfinder.ae,hamid.aliuxb@gmail.com,enquiries@homesfinder.ae,admin@homesfinder.ae").split(",") if e.strip()]
+        default_admin = (os.environ.get("DEFAULT_ADMIN_EMAIL") or "hamid.a@homesfinder.ae").strip().lower()
 
         if not user and (email in admin_emails_list or email == default_admin):
             uid = str(uuid.uuid4())

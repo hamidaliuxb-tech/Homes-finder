@@ -30,9 +30,9 @@ mongo_url = os.environ['MONGO_URL']
 client = AsyncIOMotorClient(mongo_url)
 db = client[os.environ['DB_NAME']]
 
-ADMIN_EMAIL = (os.environ.get('DEFAULT_ADMIN_EMAIL') or os.environ.get('ADMIN_EMAIL') or 'admin@homesfinder.ae').strip().lower()
+ADMIN_EMAIL = (os.environ.get('DEFAULT_ADMIN_EMAIL') or os.environ.get('ADMIN_EMAIL') or 'hamid.a@homesfinder.ae').strip().lower()
 ADMIN_PASSWORD = os.environ.get('DEFAULT_ADMIN_PASSWORD') or os.environ.get('ADMIN_PASSWORD') or 'Admin@HomesFinder2026'
-ADMIN_EMAILS = [e.strip().lower() for e in (os.environ.get('ADMIN_EMAILS') or 'admin@homesfinder.ae,hamid.aliuxb@gmail.com,hamid.a@homesfinder.ae,enquiries@homesfinder.ae').split(',') if e.strip()]
+ADMIN_EMAILS = [e.strip().lower() for e in (os.environ.get('ADMIN_EMAILS') or 'hamid.a@homesfinder.ae,hamid.aliuxb@gmail.com,enquiries@homesfinder.ae,admin@homesfinder.ae').split(',') if e.strip()]
 if ADMIN_EMAIL not in ADMIN_EMAILS:
     ADMIN_EMAILS.append(ADMIN_EMAIL)
 OWNER_EMAIL = os.environ.get('OWNER_EMAIL', ADMIN_EMAIL)
