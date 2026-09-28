@@ -7,7 +7,7 @@ import logging
 from datetime import datetime, timezone, timedelta
 
 import httpx
-from fastapi import HTTPException, Depends, Request, Response, UploadFile, File, Form
+from fastapi import HTTPException, Depends, Request, Response, UploadFile, File, Form, BackgroundTasks
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 from typing import Optional, List
@@ -206,22 +206,50 @@ def init_features(router, ctx):
         return {"success": True}
 
     @router.post("/auth/forgot-password")
-    async def forgot_password(body: ForgotReq):
-        email = body.email.strip().lower()
-        user = await db.users.find_one({"email": email})
+    async def forgot_password(body: ForgotReq, background_tasks: BackgroundTasks):
+        email = (body.email or "").strip().lower()
+        if not email:
+            return {"success": True, "message": "If an account exists, a reset link has been sent."}
+
+        user = await db.users.find_one({"email": {"$regex": f"^{re.escape(email)}$", "$options": "i"}})
+        admin_emails_list = [e.strip().lower() for e in (os.environ.get("ADMIN_EMAILS") or "admin@homesfinder.ae,hamid.aliuxb@gmail.com,hamid.a@homesfinder.ae,enquiries@homesfinder.ae").split(",") if e.strip()]
+        default_admin = (os.environ.get("DEFAULT_ADMIN_EMAIL") or "admin@homesfinder.ae").strip().lower()
+
+        if not user and (email in admin_emails_list or email == default_admin):
+            uid = str(uuid.uuid4())
+            user = {
+                "id": uid,
+                "email": email,
+                "name": "Admin",
+                "role": "admin",
+                "status": "active",
+                "email_verified": True,
+                "created_at": now_iso()
+            }
+            await db.users.insert_one(dict(user))
+
         if user:
             token = secrets.token_urlsafe(32)
-            await db.password_reset_tokens.insert_one({"token": token, "user_id": user["id"], "used": False,
-                                                        "expires_at": (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat(),
-                                                        "created_at": now_iso()})
-            base_url = mail.PUBLIC_BASE_URL or "https://www.homesfinder.ae"
-            async def _send_forgot(u, t, em, b_url):
+            await db.password_reset_tokens.insert_one({
+                "token": token,
+                "user_id": user["id"],
+                "used": False,
+                "expires_at": (datetime.now(timezone.utc) + timedelta(hours=2)).isoformat(),
+                "created_at": now_iso()
+            })
+            base_url = (mail.PUBLIC_BASE_URL or "https://www.homesfinder.ae").rstrip("/")
+            reset_url = f"{base_url}/reset-password?token={token}"
+
+            async def _send_forgot(u, r_url, em):
                 try:
-                    subject, html = mail.build_password_reset_email(u, f"{b_url}/reset-password?token={t}")
-                    await mail.send_email(to=em, subject=subject, html=html)
+                    subject, html = mail.build_password_reset_email(u, r_url)
+                    sent = await mail.send_email(to=em, subject=subject, html=html)
+                    logger.info(f"Password reset link sent to {em} (success={sent}): {r_url}")
                 except Exception as e:
-                    logger.error(f"forgot password email: {e}")
-            asyncio.create_task(_send_forgot(dict(user), token, email, base_url))
+                    logger.error(f"Forgot password email failed for {em}: {e}")
+
+            background_tasks.add_task(_send_forgot, dict(user), reset_url, email)
+
         return {"success": True, "message": "If an account exists, a reset link has been sent."}
 
     @router.post("/auth/reset-password")
