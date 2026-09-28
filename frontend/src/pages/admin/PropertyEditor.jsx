@@ -79,7 +79,7 @@ export default function PropertyEditor({ open, onClose, property, onSaved }) {
           <div className="grid sm:grid-cols-2 gap-4">
             <div><Label>Purpose</Label>
               <Select value={form.purpose} onValueChange={(v) => set("purpose", v)}><SelectTrigger className="mt-1.5" data-testid="pf-purpose"><SelectValue /></SelectTrigger>
-                <SelectContent><SelectItem value="buy">Buy / Sale</SelectItem><SelectItem value="rent">Rent</SelectItem></SelectContent></Select></div>
+                <SelectContent><SelectItem value="buy">Sell</SelectItem><SelectItem value="rent">Rent</SelectItem></SelectContent></Select></div>
             <div><Label>Category</Label>
               <Select value={form.category} onValueChange={(v) => set("category", v)}><SelectTrigger className="mt-1.5" data-testid="pf-category"><SelectValue /></SelectTrigger>
                 <SelectContent><SelectItem value="residential">Residential</SelectItem><SelectItem value="commercial">Commercial</SelectItem></SelectContent></Select></div>

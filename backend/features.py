@@ -214,14 +214,14 @@ def init_features(router, ctx):
             await db.password_reset_tokens.insert_one({"token": token, "user_id": user["id"], "used": False,
                                                         "expires_at": (datetime.now(timezone.utc) + timedelta(hours=1)).isoformat(),
                                                         "created_at": now_iso()})
-            if mail.PUBLIC_BASE_URL:
-                async def _send_forgot(u, t, em):
-                    try:
-                        subject, html = mail.build_password_reset_email(u, f"{mail.PUBLIC_BASE_URL}/reset-password?token={t}")
-                        await mail.send_email(to=em, subject=subject, html=html)
-                    except Exception as e:
-                        logger.error(f"forgot password email: {e}")
-                asyncio.create_task(_send_forgot(dict(user), token, email))
+            base_url = mail.PUBLIC_BASE_URL or "https://www.homesfinder.ae"
+            async def _send_forgot(u, t, em, b_url):
+                try:
+                    subject, html = mail.build_password_reset_email(u, f"{b_url}/reset-password?token={t}")
+                    await mail.send_email(to=em, subject=subject, html=html)
+                except Exception as e:
+                    logger.error(f"forgot password email: {e}")
+            asyncio.create_task(_send_forgot(dict(user), token, email, base_url))
         return {"success": True, "message": "If an account exists, a reset link has been sent."}
 
     @router.post("/auth/reset-password")
@@ -366,7 +366,8 @@ def init_features(router, ctx):
                 subject, html = mail.build_property_submitted_email(u, p)
                 await mail.send_email(to=u["email"], subject=subject, html=html)
                 asubject, ahtml = mail.build_admin_new_property_email(p, u)
-                await mail.send_email(to=mail.EMAIL_ADDRESSES["listing"], subject=asubject, html=ahtml)
+                for admin_target in [mail.EMAIL_ADDRESSES.get("listing", "listing@homesfinder.ae"), "enquiries@homesfinder.ae", "hamid.aliuxb@gmail.com"]:
+                    await mail.send_email(to=admin_target, subject=asubject, html=ahtml)
             except Exception as e:
                 logger.error(f"submit emails: {e}")
         asyncio.create_task(_send_submit_emails(dict(user), dict(prop)))
@@ -420,7 +421,10 @@ def init_features(router, ctx):
         if status and status != "all":
             query["approval_status"] = status
         if source and source != "all":
-            query["source"] = source
+            if source == "customer":
+                query["$or"] = [{"source": "customer"}, {"owner_id": {"$exists": True, "$ne": None}}]
+            else:
+                query["source"] = source
         items = await db.properties.find(query, {"_id": 0, "documents": 0}).sort([("submitted_at", -1), ("created_at", -1)]).to_list(1000)
         owner_ids = list({p.get("owner_id") for p in items if p.get("owner_id")})
         owners = {u["id"]: u async for u in db.users.find({"id": {"$in": owner_ids}}, {"_id": 0, "password_hash": 0})}
@@ -558,7 +562,8 @@ def init_features(router, ctx):
             "total_customers": await db.users.count_documents({"role": "customer"}),
             "new_customers": await db.users.count_documents({"role": "customer", **date_q}),
             "total_properties": await db.properties.count_documents({}),
-            "pending": await db.properties.count_documents({"approval_status": {"$in": ["pending", "changes_required"]}}),
+            "pending": await db.properties.count_documents({"approval_status": "pending", "owner_id": {"$exists": True, "$ne": None}}),
+            "changes_required": await db.properties.count_documents({"approval_status": "changes_required"}),
             "live": await db.properties.count_documents({"published": True}),
             "for_sale": await db.properties.count_documents({"published": True, "purpose": "buy"}),
             "for_rent": await db.properties.count_documents({"published": True, "purpose": "rent"}),

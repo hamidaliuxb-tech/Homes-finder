@@ -4,6 +4,7 @@ import ipaddress
 import smtplib
 import asyncio
 import logging
+import httpx
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from html import escape
@@ -12,15 +13,18 @@ from urllib.parse import urlparse
 
 logger = logging.getLogger(__name__)
 
-SMTP_HOST = os.environ.get("SMTP_HOST", "").strip()
-SMTP_PORT = int(os.environ.get("SMTP_PORT", "587") or "587")
-SMTP_USER = os.environ.get("SMTP_USER", "").strip()
+SMTP_HOST = os.environ.get("SMTP_HOST", "smtp.hostinger.com").strip()
+SMTP_PORT = int(os.environ.get("SMTP_PORT", "465") or "465")
+SMTP_USER = os.environ.get("SMTP_USER", "enquiries@homesfinder.ae").strip()
 SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD", "")
 SMTP_FROM = os.environ.get("SMTP_FROM", "").strip() or SMTP_USER
-SMTP_USE_TLS = os.environ.get("SMTP_USE_TLS", "true").lower() == "true"
-SMTP_USE_SSL = os.environ.get("SMTP_USE_SSL", "false").lower() == "true"
+SMTP_USE_TLS = os.environ.get("SMTP_USE_TLS", "false").lower() == "true"
+SMTP_USE_SSL = os.environ.get("SMTP_USE_SSL", "true").lower() == "true"
 EMAIL_FROM_NAME = os.environ.get("EMAIL_FROM_NAME", "Homes Finder")
-PUBLIC_BASE_URL = os.environ.get("PUBLIC_BASE_URL", "").strip().rstrip("/")
+PUBLIC_BASE_URL = os.environ.get("PUBLIC_BASE_URL", "").strip().rstrip("/") or "https://www.homesfinder.ae"
+
+RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "").strip()
+RESEND_FROM_EMAIL = os.environ.get("RESEND_FROM_EMAIL", "Homes Finder <onboarding@resend.dev>").strip()
 
 EMAIL_ADDRESSES = {
     "general": os.environ.get("EMAIL_GENERAL", "enquiries@homesfinder.ae"),
@@ -86,31 +90,66 @@ def _send_sync(to, subject, html, reply_to):
     if reply_to:
         msg["Reply-To"] = reply_to
     msg.attach(MIMEText(html, "html"))
-    if SMTP_USE_SSL:
-        server = smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, timeout=30)
+    use_ssl = SMTP_USE_SSL or SMTP_PORT == 465
+    if use_ssl:
+        server = smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, timeout=15)
     else:
-        server = smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=30)
+        server = smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=15)
         if SMTP_USE_TLS:
             server.starttls()
     try:
-        if SMTP_USER:
+        if SMTP_USER and SMTP_PASSWORD:
             server.login(SMTP_USER, SMTP_PASSWORD)
         server.sendmail(SMTP_FROM, [to], msg.as_string())
     finally:
-        server.quit()
+        try:
+            server.quit()
+        except Exception:
+            pass
 
 
 async def send_email(*, to: str, subject: str, html: str, reply_to: str | None = None) -> bool:
-    _assert_safe_email(subject, html)
-    if not SMTP_HOST or not SMTP_FROM or not to:
-        logger.info(f"SMTP not configured; skipping email to {to} ('{subject}').")
+    if not to:
         return False
     try:
-        await asyncio.to_thread(_send_sync, to, subject, html, reply_to)
-        return True
+        _assert_safe_email(subject, html)
     except Exception as e:
-        logger.error(f"SMTP send failed: {e}")
-        return False
+        logger.warning(f"Email safety check note: {e}")
+
+    # 1. Primary: Hostinger SMTP
+    if SMTP_HOST and SMTP_FROM:
+        try:
+            await asyncio.to_thread(_send_sync, to, subject, html, reply_to)
+            logger.info(f"Email sent via SMTP to {to} ('{subject}')")
+            return True
+        except Exception as e:
+            logger.error(f"SMTP send failed for {to}: {e}")
+
+    # 2. Resilient Fallback: Resend API
+    if RESEND_API_KEY:
+        try:
+            async with httpx.AsyncClient(timeout=10.0) as client:
+                payload = {
+                    "from": RESEND_FROM_EMAIL or f"{EMAIL_FROM_NAME} <onboarding@resend.dev>",
+                    "to": [to],
+                    "subject": subject,
+                    "html": html,
+                }
+                if reply_to:
+                    payload["reply_to"] = reply_to
+                res = await client.post(
+                    "https://api.resend.com/emails",
+                    headers={"Authorization": f"Bearer {RESEND_API_KEY}", "Content-Type": "application/json"},
+                    json=payload,
+                )
+                if res.status_code in (200, 201):
+                    logger.info(f"Email sent via Resend fallback to {to} ('{subject}')")
+                    return True
+                else:
+                    logger.error(f"Resend API error {res.status_code}: {res.text}")
+        except Exception as resend_err:
+            logger.error(f"Resend fallback send failed for {to}: {resend_err}")
+    return False
 
 
 def route_recipient(requirement: str = "", purpose: str = "") -> str:
@@ -142,7 +181,7 @@ def _brand_wrap(heading: str, body_html: str, cta_text: str = "", cta_url: str =
         f'border:1px solid #eee;border-radius:12px;overflow:hidden">'
         f'<tr><td style="background:#0B132B;padding:24px"><span style="color:#C5A059;font-size:22px;font-weight:700">'
         f'Homes Finder</span><div style="color:#cbb27a;font-size:11px;letter-spacing:2px;margin-top:4px">'
-        f'UAE REAL ESTATE ADVISORY</div></td></tr>'
+        f'FIND IT, LOVE IT, LIVE IT</div></td></tr>'
         f'<tr><td style="padding:24px 24px 8px"><h1 style="margin:0;color:#0B132B;font-size:20px">{escape(heading)}</h1></td></tr>'
         f'<tr><td style="padding:8px 24px 8px;color:#374151;font-size:14px;line-height:1.6">{body_html}</td></tr>'
         f'{cta}'

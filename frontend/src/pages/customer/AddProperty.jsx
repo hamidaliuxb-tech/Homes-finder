@@ -245,7 +245,7 @@ export default function AddProperty() {
               <Fld label="Listing Purpose">
                 <Select value={f.purpose} onValueChange={(v) => set("purpose", v)}>
                   <SelectTrigger data-testid="ap-purpose"><SelectValue /></SelectTrigger>
-                  <SelectContent><SelectItem value="buy">For Sale</SelectItem><SelectItem value="rent">For Rent</SelectItem></SelectContent>
+                  <SelectContent><SelectItem value="buy">Sell</SelectItem><SelectItem value="rent">Rent</SelectItem></SelectContent>
                 </Select>
               </Fld>
               <Fld

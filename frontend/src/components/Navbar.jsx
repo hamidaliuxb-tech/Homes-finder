@@ -49,22 +49,24 @@ export default function Navbar() {
         </div>
       )}
       <div className="mx-auto flex max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8 h-16 lg:h-20">
-        <Link to="/" className="flex items-center gap-2.5 group" data-testid="navbar-logo">
+        <Link to="/" className="flex items-center gap-2.5 group shrink-0" data-testid="navbar-logo">
           <img src="/homes-finder-icon.png" alt="Homes Finder" className="h-9 w-auto" />
           <div className="leading-none">
             <span className="font-serif text-xl lg:text-2xl font-bold tracking-tight">Homes Finder</span>
-            <span className="block text-[10px] tracking-[0.25em] text-amber-400/90 uppercase mt-0.5">UAE Real Estate Advisory</span>
+            <span className="block text-[10px] tracking-[0.2em] text-amber-400/90 uppercase mt-0.5">Find it, Love it, Live it</span>
           </div>
         </Link>
 
-        <nav className="hidden xl:flex items-center gap-1">
+        <nav className="hidden xl:flex items-center gap-0.5 2xl:gap-1 mx-2">
           {NAV.map((n) => (
             <NavLink
               key={n.to}
               to={n.to}
               data-testid={`nav-link-${n.label.toLowerCase().replace(/\s+/g, "-")}`}
               className={({ isActive }) =>
-                `px-3 py-2 text-sm font-medium rounded-md transition-colors ${isActive ? "text-amber-400" : "text-slate-200 hover:text-amber-400"}`
+                `px-2.5 py-1.5 text-[13px] 2xl:text-sm font-medium rounded-md transition-colors whitespace-nowrap ${
+                  isActive ? "text-amber-400 font-semibold" : "text-slate-200 hover:text-amber-400"
+                }`
               }
             >
               {n.label}

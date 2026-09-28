@@ -20,7 +20,7 @@ export default function ApprovalsTab() {
 
   const load = useCallback(() => {
     setLoading(true);
-    api.get("/admin/properties", { params: { status, source: "customer" } }).then((r) => setItems(r.data)).catch(() => {}).finally(() => setLoading(false));
+    api.get("/admin/properties", { params: { status } }).then((r) => setItems(r.data)).catch(() => {}).finally(() => setLoading(false));
   }, [status]);
   useEffect(() => { load(); }, [load]);
 

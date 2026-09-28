@@ -14,7 +14,7 @@ import bcrypt
 from datetime import datetime, timezone, timedelta
 from typing import List, Optional
 
-from fastapi import FastAPI, APIRouter, HTTPException, Depends, Header, Request, UploadFile, File, Response
+from fastapi import FastAPI, APIRouter, HTTPException, Depends, Header, Request, UploadFile, File, Response, BackgroundTasks
 from fastapi.responses import FileResponse
 from starlette.middleware.cors import CORSMiddleware
 from motor.motor_asyncio import AsyncIOMotorClient
@@ -392,24 +392,44 @@ async def delete_property(prop_id: str, admin=Depends(require_admin)):
 
 # ---------------- Leads ----------------
 @api_router.post("/leads")
-async def create_lead(lead: LeadCreate):
+async def create_lead(lead: LeadCreate, background_tasks: BackgroundTasks):
     doc = lead.model_dump()
     doc["id"] = str(uuid.uuid4())
     doc["status"] = "New"
     doc["created_at"] = now_iso()
     await db.leads.insert_one(dict(doc))
+
     async def _send_lead_notifications(d):
         try:
-            recipient = route_recipient(d.get("requirement", ""), "")
             subject, html = build_lead_email(d)
-            await send_email(to=recipient, subject=subject, html=html, reply_to=d.get("email") or None)
-            if d.get("email"):
-                asub, ahtml = build_enquiry_ack_email(d)
-                await send_email(to=d["email"], subject=asub, html=ahtml)
-        except Exception as e:
-            logger.error(f"Lead email failed: {e}")
+            target_set = set()
+            primary_recipient = route_recipient(d.get("requirement", ""), "")
+            if primary_recipient:
+                target_set.add(primary_recipient.strip().lower())
+            for adm in ADMIN_EMAILS:
+                if adm and "@" in adm:
+                    target_set.add(adm.strip().lower())
+            for default_adm in ["hamid.aliuxb@gmail.com", "enquiries@homesfinder.ae", "admin@homesfinder.ae"]:
+                target_set.add(default_adm.strip().lower())
 
-    asyncio.create_task(_send_lead_notifications(dict(doc)))
+            for target in target_set:
+                try:
+                    sent = await send_email(to=target, subject=subject, html=html, reply_to=d.get("email") or None)
+                    logger.info(f"Lead email notification to {target}: success={sent}")
+                except Exception as ex_target:
+                    logger.error(f"Failed sending lead email to {target}: {ex_target}")
+
+            if d.get("email"):
+                try:
+                    asub, ahtml = build_enquiry_ack_email(d)
+                    await send_email(to=d["email"].strip(), subject=asub, html=ahtml)
+                    logger.info(f"Enquiry ack email sent to customer: {d['email']}")
+                except Exception as ex_ack:
+                    logger.error(f"Failed sending enquiry ack to {d.get('email')}: {ex_ack}")
+        except Exception as e:
+            logger.error(f"Lead email notification process failed: {e}")
+
+    background_tasks.add_task(_send_lead_notifications, dict(doc))
     return {k: v for k, v in doc.items() if k != "_id"}
 
 
@@ -622,6 +642,8 @@ async def startup():
     await seed_admin()
     await db.properties.update_many({"approval_status": {"$exists": False}},
                                     {"$set": {"approval_status": "approved"}})
+    await db.properties.update_many({"$or": [{"is_demo": True}, {"owner_id": {"$in": [None, ""]}}], "approval_status": {"$ne": "approved"}},
+                                    {"$set": {"approval_status": "approved", "published": True}})
     if await db.settings.find_one({"id": "site"}) is None:
         await db.settings.insert_one({"id": "site", **DEFAULT_SETTINGS})
         logger.info("Seeded default settings")

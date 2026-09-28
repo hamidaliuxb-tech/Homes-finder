@@ -33,14 +33,17 @@ export default function Footer() {
     <footer className="bg-slate-950 text-slate-300" data-testid="main-footer">
       <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-14 grid grid-cols-1 md:grid-cols-4 gap-10">
         <div className="md:col-span-1">
-          <div className="flex items-center gap-2 mb-4">
+          <div className="flex items-center gap-2 mb-3">
             <img src="/homes-finder-icon.png" alt="Homes Finder" className="h-8 w-auto" />
-            <span className="font-serif text-xl font-bold text-white">Homes Finder</span>
+            <div className="leading-none">
+              <span className="font-serif text-xl font-bold text-white">Homes Finder</span>
+              <span className="block text-[10px] tracking-[0.2em] text-amber-400 uppercase mt-1">Find it, Love it, Live it</span>
+            </div>
           </div>
           <p className="text-sm text-slate-400 leading-relaxed mb-4">
             {settings?.footer_note || "Your trusted partner for residential, commercial and investment real estate opportunities across the UAE."}
           </p>
-          <div className="text-amber-400 text-sm font-medium tracking-wide">Buy · Sell · Rent · Invest</div>
+          <div className="text-amber-400 text-sm font-medium tracking-wide">Find it · Love it · Live it</div>
         </div>
 
         <div>
