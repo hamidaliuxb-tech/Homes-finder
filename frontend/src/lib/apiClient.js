@@ -6,6 +6,7 @@ export const API = BACKEND_URL ? `${BACKEND_URL.replace(/\/$/, '')}/api` : "/api
 export const api = axios.create({
   baseURL: API,
   withCredentials: true,
+  timeout: 10000,
 });
 
 api.interceptors.request.use((config) => {
