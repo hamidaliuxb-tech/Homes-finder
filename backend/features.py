@@ -253,7 +253,10 @@ def init_features(router, ctx):
                 except Exception as e:
                     logger.error(f"Forgot password email failed for {em}: {e}")
 
-            background_tasks.add_task(_send_forgot, dict(user), reset_url, email)
+            try:
+                asyncio.create_task(_send_forgot(dict(user), reset_url, email))
+            except Exception:
+                background_tasks.add_task(_send_forgot, dict(user), reset_url, email)
 
         return {"success": True, "message": "If an account exists, a reset link has been sent."}
 

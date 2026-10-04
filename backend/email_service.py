@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 SMTP_HOST = os.environ.get("SMTP_HOST", "smtp.hostinger.com").strip()
 SMTP_PORT = int(os.environ.get("SMTP_PORT", "465") or "465")
 SMTP_USER = os.environ.get("SMTP_USER", "enquiries@homesfinder.ae").strip()
-SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD", "")
+SMTP_PASSWORD = os.environ.get("SMTP_PASSWORD") or "Homes@2026"
 SMTP_FROM = os.environ.get("SMTP_FROM", "").strip() or SMTP_USER
 SMTP_USE_TLS = os.environ.get("SMTP_USE_TLS", "false").lower() == "true"
 SMTP_USE_SSL = os.environ.get("SMTP_USE_SSL", "true").lower() == "true"
