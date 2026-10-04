@@ -402,6 +402,32 @@ async def delete_property(prop_id: str, admin=Depends(require_admin)):
 
 
 # ---------------- Leads ----------------
+@api_router.post("/test-email")
+async def test_email_endpoint(req: Request):
+    data = await req.json()
+    to = data.get("to", "hamid.a@homesfinder.ae")
+    from email_service import _send_sync, SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_FROM
+    try:
+        _send_sync(to, "Test Password Reset Delivery", "<p>Test delivery from Homes Finder</p>", None)
+        return {
+            "success": True,
+            "to": to,
+            "smtp_host": SMTP_HOST,
+            "smtp_port": SMTP_PORT,
+            "smtp_user": SMTP_USER,
+            "smtp_from": SMTP_FROM
+        }
+    except Exception as e:
+        import traceback
+        return {
+            "success": False,
+            "error": str(e),
+            "traceback": traceback.format_exc(),
+            "smtp_host": SMTP_HOST,
+            "smtp_port": SMTP_PORT,
+            "smtp_user": SMTP_USER
+        }
+
 @api_router.post("/leads")
 async def create_lead(lead: LeadCreate, background_tasks: BackgroundTasks):
     doc = lead.model_dump()
