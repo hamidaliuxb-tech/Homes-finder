@@ -138,10 +138,10 @@ async def send_email(*, to: str, subject: str, html: str, reply_to: str | None =
         except Exception as e:
             logger.error(f"SMTP send failed for {to}: {e}")
 
-    # 2. Resilient Fallback: Resend API
+    # 2. Resilient Fallback: Resend API (HTTPS Port 443 - works on Render)
     if RESEND_API_KEY:
         try:
-            async with httpx.AsyncClient(timeout=4.0) as client:
+            async with httpx.AsyncClient(timeout=8.0) as client:
                 payload = {
                     "from": RESEND_FROM_EMAIL or f"{EMAIL_FROM_NAME} <onboarding@resend.dev>",
                     "to": [to],
@@ -152,7 +152,11 @@ async def send_email(*, to: str, subject: str, html: str, reply_to: str | None =
                     payload["reply_to"] = reply_to
                 res = await client.post(
                     "https://api.resend.com/emails",
-                    headers={"Authorization": f"Bearer {RESEND_API_KEY}", "Content-Type": "application/json"},
+                    headers={
+                        "Authorization": f"Bearer {RESEND_API_KEY}",
+                        "Content-Type": "application/json",
+                        "User-Agent": "HomesFinder/1.0"
+                    },
                     json=payload,
                 )
                 if res.status_code in (200, 201):
