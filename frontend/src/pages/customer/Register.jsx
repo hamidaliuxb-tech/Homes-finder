@@ -16,7 +16,7 @@ import { EMIRATES } from "@/data/site";
 const USER_TYPES = ["Property Owner", "Landlord", "Seller", "Agent / Broker", "Investor", "Tenant", "Other"];
 
 export default function Register() {
-  const { setUser } = useAuth();
+  const { register } = useAuth();
   const navigate = useNavigate();
   const [f, setF] = useState({ name: "", email: "", mobile: "", country: "United Arab Emirates", emirate: "Dubai",
     location: "", password: "", confirm: "", company: "", user_type: "Property Owner", preferred_contact: "" });
@@ -37,12 +37,11 @@ export default function Register() {
     if (!token) { toast.error("Please complete the anti-bot verification"); return; }
     setLoading(true);
     try {
-      const res = await api.post("/auth/register", {
+      await register({
         name: f.name, email: f.email, mobile: f.mobile, country: f.country, emirate: f.emirate,
         location: f.location, password: f.password, company: f.company, user_type: f.user_type,
         preferred_contact: f.preferred_contact, consent, turnstile_token: token,
       });
-      setUser(res.data);
       toast.success("Account created! Welcome to Homes Finder.");
       navigate("/dashboard");
     } catch (err) {

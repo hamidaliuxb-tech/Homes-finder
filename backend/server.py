@@ -179,8 +179,12 @@ class LeadStatusUpdate(BaseModel):
 # ---------------- Auth helpers ----------------
 async def get_current_user(request: Request, authorization: Optional[str] = Header(None)):
     token = request.cookies.get("access_token")
-    if not token and authorization and authorization.startswith("Bearer "):
-        token = authorization.split(" ", 1)[1]
+    if not token:
+        auth_hdr = authorization or request.headers.get("Authorization") or request.headers.get("authorization")
+        if auth_hdr and "bearer " in auth_hdr.lower():
+            token = auth_hdr.split(" ", 1)[1].strip()
+        elif auth_hdr:
+            token = auth_hdr.strip()
     if not token:
         raise HTTPException(status_code=401, detail="Not authenticated")
     try:
@@ -191,11 +195,18 @@ async def get_current_user(request: Request, authorization: Optional[str] = Head
         raise HTTPException(status_code=401, detail="Token expired")
     except jwt.InvalidTokenError:
         raise HTTPException(status_code=401, detail="Invalid token")
-    user = await db.users.find_one({"$or": [{"id": payload["sub"]}, {"user_id": payload["sub"]}]}, {"_id": 0, "password_hash": 0})
+    sub = payload.get("sub")
+    email = payload.get("email")
+    query = []
+    if sub:
+        query.extend([{"id": sub}, {"user_id": sub}])
+    if email:
+        query.append({"email": email.strip().lower()})
+    user = await db.users.find_one({"$or": query} if query else {"id": sub}, {"_id": 0, "password_hash": 0})
     if not user:
         raise HTTPException(status_code=401, detail="User not found")
     if not user.get("id"):
-        user["id"] = user.get("user_id")
+        user["id"] = user.get("user_id") or str(uuid.uuid4())
     return user
 
 

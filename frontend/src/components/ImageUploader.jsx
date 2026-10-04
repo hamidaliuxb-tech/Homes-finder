@@ -10,16 +10,18 @@ export default function ImageUploader({ images = [], onChange }) {
   const [urlInput, setUrlInput] = useState("");
 
   const handleFiles = async (files) => {
+    if (!files || !files.length) return;
     setUploading(true);
     try {
       const uploadPromises = Array.from(files).map(async (file) => {
         try {
           const fd = new FormData();
           fd.append("file", file);
-          const res = await api.post("/upload", fd, { headers: { "Content-Type": "multipart/form-data" } });
+          const res = await api.post("/upload", fd);
           return res.data.url;
-        } catch {
-          toast.error(`Failed to upload ${file.name}`);
+        } catch (err) {
+          const errDetail = err.response?.data?.detail || err.message || `Failed to upload ${file.name}`;
+          toast.error(errDetail);
           return null;
         }
       });
@@ -27,7 +29,7 @@ export default function ImageUploader({ images = [], onChange }) {
       const uploaded = results.filter(Boolean);
       if (uploaded.length) {
         onChange([...images, ...uploaded]);
-        toast.success(`${uploaded.length} image(s) uploaded`);
+        toast.success(`${uploaded.length} image(s) uploaded successfully`);
       }
     } finally {
       setUploading(false);
@@ -44,9 +46,21 @@ export default function ImageUploader({ images = [], onChange }) {
     <div data-testid="image-uploader">
       <div className="grid grid-cols-3 sm:grid-cols-4 gap-3 mb-3">
         {images.map((img, i) => (
-          <div key={i} className="relative rounded-lg overflow-hidden aspect-square border border-slate-200 group">
-            <img src={fileUrl(img)} alt="" className="h-full w-full object-cover" />
-            <button type="button" onClick={() => remove(i)} data-testid={`remove-image-${i}`} className="absolute top-1 right-1 bg-black/60 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"><X className="h-3 w-3" /></button>
+          <div key={i} className="relative rounded-lg overflow-hidden aspect-square border border-slate-200 group bg-slate-100">
+            <img
+              src={fileUrl(img)}
+              alt={`Upload ${i + 1}`}
+              className="h-full w-full object-cover"
+              onError={(e) => {
+                if (!e.target.dataset.retried && typeof img === "string") {
+                  e.target.dataset.retried = "true";
+                  if (img.startsWith("/api/files/")) {
+                    e.target.src = img;
+                  }
+                }
+              }}
+            />
+            <button type="button" onClick={() => remove(i)} data-testid={`remove-image-${i}`} className="absolute top-1 right-1 bg-black/60 hover:bg-black text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"><X className="h-3 w-3" /></button>
             {i === 0 && <span className="absolute bottom-0 left-0 right-0 bg-amber-500 text-slate-950 text-[10px] font-bold text-center py-0.5">Cover</span>}
           </div>
         ))}
