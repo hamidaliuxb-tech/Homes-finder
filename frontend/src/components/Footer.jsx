@@ -37,7 +37,7 @@ export default function Footer() {
             <img src="/homes-finder-icon.png" alt="Homes Finder" className="h-8 w-auto" />
             <div className="leading-none">
               <span className="font-serif text-xl font-bold text-white">Homes Finder</span>
-              <span className="block text-[10px] tracking-[0.2em] text-amber-400 uppercase mt-1">Find it, Love it, Live it</span>
+              <span className="block text-[10.5px] sm:text-[11px] font-semibold tracking-[0.22em] text-yellow-400 uppercase mt-1">Find it, Love it, Live it</span>
             </div>
           </div>
           <p className="text-sm text-slate-400 leading-relaxed mb-4">

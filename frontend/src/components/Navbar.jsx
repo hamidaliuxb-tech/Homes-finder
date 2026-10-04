@@ -52,8 +52,8 @@ export default function Navbar() {
         <Link to="/" className="flex items-center gap-2.5 group shrink-0" data-testid="navbar-logo">
           <img src="/homes-finder-icon.png" alt="Homes Finder" className="h-9 w-auto" />
           <div className="leading-none">
-            <span className="font-serif text-xl lg:text-2xl font-bold tracking-tight">Homes Finder</span>
-            <span className="block text-[10px] tracking-[0.2em] text-amber-400/90 uppercase mt-0.5">Find it, Love it, Live it</span>
+            <span className="font-serif text-xl lg:text-2xl font-bold tracking-tight text-white">Homes Finder</span>
+            <span className="block text-[10.5px] sm:text-[11px] font-semibold tracking-[0.22em] text-yellow-400 uppercase mt-0.5 drop-shadow-sm">Find it, Love it, Live it</span>
           </div>
         </Link>
 
