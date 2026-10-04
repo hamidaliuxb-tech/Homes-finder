@@ -787,17 +787,28 @@ features.init_features(api_router, SimpleNamespace(
     create_access_token=create_access_token, set_auth_cookie=set_auth_cookie, slugify=slugify,
 ))
 
-app.include_router(api_router)
-
 _cors = os.environ.get('CORS_ORIGINS', '*')
-_origins = ["*"] if _cors.strip() == "*" else [o.strip() for o in _cors.split(',') if o.strip()]
+_origins = [
+    "https://www.homesfinder.ae",
+    "https://homesfinder.ae",
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+]
+if _cors.strip() != "*":
+    for o in _cors.split(','):
+        if o.strip() and o.strip() not in _origins:
+            _origins.append(o.strip())
+
 app.add_middleware(
     CORSMiddleware,
     allow_credentials=True,
     allow_origins=_origins,
+    allow_origin_regex=r"https?://.*homesfinder.*|https?://localhost.*|https?://127\.0\.0\.1.*",
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+app.include_router(api_router)
 
 
 async def seed_admin():

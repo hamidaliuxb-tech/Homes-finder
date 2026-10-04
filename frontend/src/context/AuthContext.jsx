@@ -59,6 +59,7 @@ export const AuthProvider = ({ children }) => {
       } catch {}
     }
     setUser(res.data);
+    setLoading(false);
     return res.data;
   };
 
@@ -71,6 +72,7 @@ export const AuthProvider = ({ children }) => {
       } catch {}
     }
     setUser(res.data);
+    setLoading(false);
     return res.data;
   };
 
