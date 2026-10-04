@@ -92,9 +92,9 @@ def _send_sync(to, subject, html, reply_to):
     msg.attach(MIMEText(html, "html"))
     use_ssl = SMTP_USE_SSL or SMTP_PORT == 465
     if use_ssl:
-        server = smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, timeout=15)
+        server = smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, timeout=5)
     else:
-        server = smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=15)
+        server = smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=5)
         if SMTP_USE_TLS:
             server.starttls()
     try:
@@ -128,7 +128,7 @@ async def send_email(*, to: str, subject: str, html: str, reply_to: str | None =
     # 2. Resilient Fallback: Resend API
     if RESEND_API_KEY:
         try:
-            async with httpx.AsyncClient(timeout=10.0) as client:
+            async with httpx.AsyncClient(timeout=4.0) as client:
                 payload = {
                     "from": RESEND_FROM_EMAIL or f"{EMAIL_FROM_NAME} <onboarding@resend.dev>",
                     "to": [to],
