@@ -32,13 +32,20 @@ export default function Login() {
 
   const sendReset = async (e) => {
     e.preventDefault();
+    if (!email.trim()) {
+      toast.error("Please enter your email address");
+      return;
+    }
     setLoading(true);
     try {
       await api.post("/auth/forgot-password", { email: email.trim() });
       toast.success("If an account exists, a reset link has been sent to your email.");
       setForgot(false);
-    } catch { toast.error("Something went wrong"); }
-    finally { setLoading(false); }
+    } catch (err) {
+      toast.error(formatApiErrorDetail(err.response?.data?.detail) || "Failed to send reset link. Please try again.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
@@ -86,7 +93,7 @@ export default function Login() {
         </form>
 
         <div className="mt-5 flex items-center justify-between text-sm">
-          <button onClick={() => setForgot(!forgot)} className="text-amber-400 hover:underline" data-testid="forgot-toggle">
+          <button type="button" onClick={() => setForgot(!forgot)} className="text-amber-400 hover:underline" data-testid="forgot-toggle">
             {forgot ? "← Back to sign in" : "Forgot Password?"}
           </button>
           <Link to="/register" className="text-slate-300 hover:text-amber-400" data-testid="to-register">Create Account</Link>
