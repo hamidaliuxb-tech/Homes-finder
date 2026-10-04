@@ -43,7 +43,7 @@ export default function Footer() {
           <p className="text-sm text-slate-400 leading-relaxed mb-4">
             {settings?.footer_note || "Your trusted partner for residential, commercial and investment real estate opportunities across the UAE."}
           </p>
-          <div className="text-amber-400 text-sm font-medium tracking-wide">Find it · Love it · Live it</div>
+          <div className="text-amber-400 text-sm font-medium tracking-wide">Buy · Sell · Rent · Invest</div>
         </div>
 
         <div>
