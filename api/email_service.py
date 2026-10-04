@@ -24,7 +24,7 @@ EMAIL_FROM_NAME = os.environ.get("EMAIL_FROM_NAME", "Homes Finder")
 PUBLIC_BASE_URL = os.environ.get("PUBLIC_BASE_URL", "").strip().rstrip("/") or "https://www.homesfinder.ae"
 
 RESEND_API_KEY = os.environ.get("RESEND_API_KEY", "").strip()
-RESEND_FROM_EMAIL = os.environ.get("RESEND_FROM_EMAIL", "Homes Finder <onboarding@resend.dev>").strip()
+RESEND_FROM_EMAIL = os.environ.get("RESEND_FROM_EMAIL", "Homes Finder <enquiries@homesfinder.ae>").strip()
 
 EMAIL_ADDRESSES = {
     "general": os.environ.get("EMAIL_GENERAL", "enquiries@homesfinder.ae"),
@@ -129,21 +129,13 @@ async def send_email(*, to: str, subject: str, html: str, reply_to: str | None =
     except Exception as e:
         logger.warning(f"Email safety check note: {e}")
 
-    # 1. Primary: Hostinger SMTP
-    if SMTP_HOST and SMTP_FROM:
-        try:
-            await asyncio.to_thread(_send_sync, to, subject, html, reply_to)
-            logger.info(f"Email sent via SMTP to {to} ('{subject}')")
-            return True
-        except Exception as e:
-            logger.error(f"SMTP send failed for {to}: {e}")
-
-    # 2. Resilient Fallback: Resend API (HTTPS Port 443 - works on Render)
+    # 1. Primary: Resend HTTPS API (Port 443 - works on Render without port blocking)
     if RESEND_API_KEY:
         try:
             async with httpx.AsyncClient(timeout=8.0) as client:
+                from_addr = RESEND_FROM_EMAIL or f"{EMAIL_FROM_NAME} <enquiries@homesfinder.ae>"
                 payload = {
-                    "from": RESEND_FROM_EMAIL or f"{EMAIL_FROM_NAME} <onboarding@resend.dev>",
+                    "from": from_addr,
                     "to": [to],
                     "subject": subject,
                     "html": html,
@@ -160,12 +152,22 @@ async def send_email(*, to: str, subject: str, html: str, reply_to: str | None =
                     json=payload,
                 )
                 if res.status_code in (200, 201):
-                    logger.info(f"Email sent via Resend fallback to {to} ('{subject}')")
+                    logger.info(f"Email sent via Resend to {to} ('{subject}')")
                     return True
                 else:
-                    logger.error(f"Resend API error {res.status_code}: {res.text}")
+                    logger.warning(f"Resend API response {res.status_code}: {res.text}")
         except Exception as resend_err:
-            logger.error(f"Resend fallback send failed for {to}: {resend_err}")
+            logger.warning(f"Resend send failed for {to}: {resend_err}")
+
+    # 2. Direct SMTP
+    if SMTP_HOST and SMTP_FROM:
+        try:
+            await asyncio.to_thread(_send_sync, to, subject, html, reply_to)
+            logger.info(f"Email sent via SMTP to {to} ('{subject}')")
+            return True
+        except Exception as e:
+            logger.error(f"SMTP send failed for {to}: {e}")
+
     return False
 
 
