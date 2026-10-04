@@ -2,6 +2,7 @@ import React from "react";
 import SEO from "@/components/SEO";
 import { PageHero, Section, SectionHeading } from "@/components/Primitives";
 import PropertyGrid from "@/components/PropertyGrid";
+import ROICalculator from "@/components/ROICalculator";
 import CTASection from "@/components/CTASection";
 
 export default function OffPlan() {
@@ -23,6 +24,22 @@ export default function OffPlan() {
           {["New Launches", "Payment Plans", "Completion Dates", "Developer Information", "Project Location", "Expected Rental Opportunities", "Investment Analysis", "Handover Details"].map((t, i) => (
             <div key={i} className="bg-[#FAFAFA] border border-slate-200 rounded-xl p-5 font-medium text-slate-800 text-sm" data-testid={`offplan-cover-${i}`}>{t}</div>
           ))}
+        </div>
+      </Section>
+      <Section className="bg-[#FAFAFA]">
+        <SectionHeading
+          eyebrow="Off-Plan ROI Calculator"
+          title="Projected Rental Yield & Investment Growth"
+          subtitle="Estimate your rental yields, handover cashflow and long-term capital growth on new developer launches."
+          centered
+        />
+        <div className="max-w-4xl mx-auto mt-8">
+          <ROICalculator
+            initialPrice="2100000"
+            initialRent="160000"
+            title="Off-Plan Yield & Capital Return Estimator"
+            subtitle="Analyze projected post-handover rental yield against launch acquisition price."
+          />
         </div>
       </Section>
       <CTASection waContext="invest" />

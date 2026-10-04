@@ -2,6 +2,7 @@ import React from "react";
 import SEO from "@/components/SEO";
 import { PageHero, Section, SectionHeading } from "@/components/Primitives";
 import LeadForm from "@/components/LeadForm";
+import ROICalculator from "@/components/ROICalculator";
 import { ProcessSteps } from "@/components/InfoBlocks";
 import CTASection from "@/components/CTASection";
 
@@ -26,6 +27,23 @@ export default function Sell() {
           <div className="bg-[#FAFAFA] border border-slate-200 rounded-2xl p-6 sm:p-8">
             <LeadForm requirement="Property Valuation / Sell" extended submitLabel="Request a Property Valuation" />
           </div>
+        </div>
+      </Section>
+
+      <Section className="bg-[#FAFAFA]">
+        <SectionHeading
+          eyebrow="Yield & ROI Estimator"
+          title="Calculate Your Property Returns"
+          subtitle="Evaluate potential rental income and investment yields before listing or selling your UAE asset."
+          centered
+        />
+        <div className="max-w-4xl mx-auto mt-8">
+          <ROICalculator
+            initialPrice="3200000"
+            initialRent="220000"
+            title="Seller & Investor Yield Estimator"
+            subtitle="Understand your asset's capitalization rate and attractive rental metrics for potential buyers."
+          />
         </div>
       </Section>
 

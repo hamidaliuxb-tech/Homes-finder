@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button";
 import SEO from "@/components/SEO";
 import { PageHero, Section, SectionHeading } from "@/components/Primitives";
 import PropertyGrid from "@/components/PropertyGrid";
+import ROICalculator from "@/components/ROICalculator";
 import CTASection from "@/components/CTASection";
 
 const CATS = [
@@ -38,6 +39,24 @@ export default function Commercial() {
         <SectionHeading eyebrow="Available Now" title="Commercial Listings" />
         <PropertyGrid fixed={{ category: "commercial" }} />
       </Section>
+
+      <Section className="bg-[#FAFAFA] border-t border-slate-200">
+        <SectionHeading
+          eyebrow="Commercial Yield Calculator"
+          title="Commercial Asset Rental Yield & Cashflow"
+          subtitle="Estimate commercial office, retail and industrial yields with customized lease assumptions."
+          centered
+        />
+        <div className="max-w-4xl mx-auto mt-8">
+          <ROICalculator
+            initialPrice="5500000"
+            initialRent="440000"
+            title="Commercial Yield & Cap Rate Calculator"
+            subtitle="Analyze long-term commercial lease yield and net asset capitalization rate."
+          />
+        </div>
+      </Section>
+
       <CTASection title="Have a Commercial Requirement?" text="Tell us about your office, retail, warehouse or investment building requirement and our team will source suitable opportunities." waContext="general" />
     </div>
   );

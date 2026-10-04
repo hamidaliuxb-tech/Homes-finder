@@ -562,6 +562,169 @@ async def delete_option(body: DeleteOptionReq, admin=Depends(require_admin)):
     return {"success": True, "options": options}
 
 
+# ---------------- Legal Services & CMS Endpoints ----------------
+DEFAULT_LEGAL_DOCS = [
+    {
+        "slug": "privacy-policy",
+        "title": "Privacy Policy",
+        "subtitle": "How Homes Finder collects, manages, and safeguards your personal data.",
+        "icon": "ShieldCheck",
+        "category": "legal_policy",
+        "body": [
+            "Homes Finder respects your privacy. This policy explains how we collect, use and protect the information you provide through our website.",
+            "We collect information you submit via enquiry and consultation forms (such as your name, mobile number and email) to respond to your request and provide our services.",
+            "We do not sell your personal information. We may use trusted service providers to help us operate our website and communicate with you.",
+            "You may contact us at any time to request access to, correction of, or deletion of your personal information."
+        ]
+    },
+    {
+        "slug": "terms",
+        "title": "Terms & Conditions",
+        "subtitle": "Terms and conditions governing the use of the Homes Finder portal and services.",
+        "icon": "FileText",
+        "category": "legal_policy",
+        "body": [
+            "By using this website you agree to these terms. The content on this website is provided for general information purposes only.",
+            "Property listings labelled as 'Demo Property' are illustrative and do not represent actual available inventory unless confirmed by Homes Finder.",
+            "Homes Finder makes no warranty regarding the accuracy or completeness of information and reserves the right to update content at any time.",
+            "Nothing on this website constitutes financial, legal or investment advice."
+        ]
+    },
+    {
+        "slug": "cookie-policy",
+        "title": "Cookie Policy",
+        "subtitle": "Information regarding cookies and web technologies used on this website.",
+        "icon": "Cookie",
+        "category": "legal_policy",
+        "body": [
+            "This website may use cookies and similar technologies to improve your browsing experience and understand how the site is used.",
+            "You can control or delete cookies through your browser settings. Disabling cookies may affect some functionality."
+        ]
+    },
+    {
+        "slug": "real-estate-disclaimer",
+        "title": "Real Estate Disclaimer",
+        "subtitle": "Important disclaimers and notices regarding UAE property listings and details.",
+        "icon": "Building",
+        "category": "disclaimer",
+        "body": [
+            "All property information, images, prices and specifications on this website are provided for general guidance and may change without notice.",
+            "Demo properties are clearly labelled and are used for demonstration purposes only until actual company listings are added.",
+            "Prospective buyers and tenants should independently verify all details before entering into any transaction."
+        ]
+    },
+    {
+        "slug": "investment-disclaimer",
+        "title": "Investment Disclaimer",
+        "subtitle": "Advisory notices concerning property valuation, yields, and investment returns.",
+        "icon": "AlertTriangle",
+        "category": "disclaimer",
+        "body": [
+            "Property values, rental yields, capital appreciation and investment returns are not guaranteed and depend on market conditions.",
+            "Any figures, calculators or projections presented on this website are indicative and for illustration only. They do not constitute financial or investment advice.",
+            "You should seek independent professional advice before making any property investment decision."
+        ]
+    },
+    {
+        "slug": "legal-conveyancing-services",
+        "title": "Legal Conveyancing & Transaction Advisory",
+        "subtitle": "Advisory and procedural support for UAE property conveyancing, title deed registrations, escrow and legal verification.",
+        "icon": "ShieldCheck",
+        "category": "legal_service",
+        "body": [
+            "Homes Finder provides procedural advisory for residential and commercial property conveyancing across Dubai and the UAE.",
+            "We coordinate with accredited UAE legal trustees, escrow banks, and the Dubai Land Department (DLD) to ensure seamless ownership transfer and full regulatory compliance.",
+            "Our advisory includes NOC clearance facilitation, mortgage discharge coordination, power of attorney (POA) advisory, and Form F contract structuring."
+        ]
+    }
+]
+
+class LegalDocCreate(BaseModel):
+    title: str
+    slug: Optional[str] = ""
+    subtitle: Optional[str] = ""
+    category: Optional[str] = "legal_service"
+    icon: Optional[str] = "ShieldCheck"
+    body: List[str] = []
+
+class LegalDocUpdate(BaseModel):
+    title: Optional[str] = None
+    subtitle: Optional[str] = None
+    category: Optional[str] = None
+    icon: Optional[str] = None
+    body: Optional[List[str]] = None
+
+@api_router.get("/legal")
+async def list_legal_docs():
+    docs = await db.legal_docs.find({}, {"_id": 0}).sort([("category", 1), ("title", 1)]).to_list(100)
+    if not docs:
+        for d in DEFAULT_LEGAL_DOCS:
+            await db.legal_docs.update_one({"slug": d["slug"]}, {"$set": d}, upsert=True)
+        docs = await db.legal_docs.find({}, {"_id": 0}).sort([("category", 1), ("title", 1)]).to_list(100)
+    return docs
+
+@api_router.get("/legal/{slug}")
+async def get_legal_doc(slug: str):
+    doc = await db.legal_docs.find_one({"slug": slug}, {"_id": 0})
+    if not doc:
+        default_match = next((d for d in DEFAULT_LEGAL_DOCS if d["slug"] == slug), None)
+        if default_match:
+            await db.legal_docs.update_one({"slug": slug}, {"$set": default_match}, upsert=True)
+            return default_match
+        raise HTTPException(status_code=404, detail="Legal document not found")
+    return doc
+
+@api_router.post("/legal")
+async def create_legal_doc(body: LegalDocCreate, admin=Depends(require_admin)):
+    if not body.title.strip():
+        raise HTTPException(status_code=400, detail="Title is required")
+    slug = (body.slug or "").strip().lower() or slugify(body.title)
+    existing = await db.legal_docs.find_one({"slug": slug})
+    if existing:
+        raise HTTPException(status_code=409, detail=f"Legal document with slug '{slug}' already exists")
+    doc = {
+        "id": str(uuid.uuid4()),
+        "slug": slug,
+        "title": body.title.strip(),
+        "subtitle": (body.subtitle or "").strip(),
+        "category": body.category or "legal_service",
+        "icon": body.icon or "ShieldCheck",
+        "body": body.body if body.body and len(body.body) > 0 else ["Content details will be updated shortly."],
+        "created_at": now_iso(),
+        "updated_at": now_iso()
+    }
+    await db.legal_docs.insert_one(dict(doc))
+    return {k: v for k, v in doc.items() if k != "_id"}
+
+@api_router.put("/legal/{slug}")
+async def update_legal_doc(slug: str, body: LegalDocUpdate, admin=Depends(require_admin)):
+    existing = await db.legal_docs.find_one({"slug": slug})
+    if not existing:
+        raise HTTPException(status_code=404, detail="Legal document not found")
+    updates = {}
+    if body.title is not None:
+        updates["title"] = body.title.strip()
+    if body.subtitle is not None:
+        updates["subtitle"] = body.subtitle.strip()
+    if body.category is not None:
+        updates["category"] = body.category
+    if body.icon is not None:
+        updates["icon"] = body.icon
+    if body.body is not None:
+        updates["body"] = body.body
+    updates["updated_at"] = now_iso()
+    await db.legal_docs.update_one({"slug": slug}, {"$set": updates})
+    updated = await db.legal_docs.find_one({"slug": slug}, {"_id": 0})
+    return updated
+
+@api_router.delete("/legal/{slug}")
+async def delete_legal_doc(slug: str, admin=Depends(require_admin)):
+    res = await db.legal_docs.delete_one({"slug": slug})
+    if res.deleted_count == 0:
+        raise HTTPException(status_code=404, detail="Legal document not found")
+    return {"success": True, "message": f"Legal document '{slug}' deleted"}
+
+
 # ---------------- File Upload / Serve (local disk) ----------------
 @api_router.post("/upload")
 async def upload_file(file: UploadFile = File(...), user=Depends(get_current_user)):

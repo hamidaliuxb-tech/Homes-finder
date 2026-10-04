@@ -3,7 +3,9 @@ import { useParams, Link } from "react-router-dom";
 import {
   MapPin, BedDouble, Bath, Maximize, Building2, Phone, MessageCircle, CheckCircle2,
   CalendarClock, Landmark, TrendingUp, GraduationCap, Hospital, TrainFront, Play, Boxes,
+  Share2, Copy, Check, Calendar, Armchair, Hash, Globe
 } from "lucide-react";
+import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import SEO from "@/components/SEO";
@@ -18,9 +20,23 @@ import { getCachedProperties, fetchWithRetry } from "@/lib/cache";
 import { useSettings } from "@/context/SettingsContext";
 import { waLink } from "@/components/FloatingWhatsApp";
 
+const formatDate = (d) => {
+  if (!d) return "";
+  try {
+    const date = new Date(d);
+    if (isNaN(date.getTime())) return "";
+    const day = String(date.getDate()).padStart(2, "0");
+    const month = String(date.getMonth() + 1).padStart(2, "0");
+    const year = date.getFullYear();
+    return `${day}/${month}/${year}`;
+  } catch {
+    return "";
+  }
+};
+
 const Spec = ({ icon: Icon, label, value }) => (
   <div className="flex items-center gap-3 bg-[#FAFAFA] border border-slate-200 rounded-xl p-4">
-    <Icon className="h-5 w-5 text-amber-500" />
+    <Icon className="h-5 w-5 text-amber-500 shrink-0" />
     <div><div className="text-xs text-slate-500">{label}</div><div className="font-semibold text-slate-900 text-sm">{value}</div></div>
   </div>
 );
@@ -47,6 +63,7 @@ export default function PropertyDetail() {
   });
   const [loading, setLoading] = useState(() => !property);
   const [active, setActive] = useState(0);
+  const [copied, setCopied] = useState(false);
   const number = settings?.contact?.whatsapp || "971501184777";
   const phone = settings?.contact?.phone || "+971 50 118 4777";
 
@@ -69,6 +86,21 @@ export default function PropertyDetail() {
 
   const images = (property.images || []).map(fileUrl);
   const period = property.price_period ? ` ${property.price_period}` : "";
+  const refId = property.reference || (property.id ? `HF-${property.emirate ? property.emirate.slice(0, 3).toUpperCase() : "DXB"}-${property.id.slice(0, 6).toUpperCase()}` : "");
+  const postedDate = formatDate(property.posted_date || property.submitted_at || property.created_at);
+  const furnishing = property.furnished ? (property.furnished.charAt(0).toUpperCase() + property.furnished.slice(1)) : "Unfurnished";
+  const currentUrl = typeof window !== "undefined" ? window.location.href : `https://www.homesfinder.ae/property/${property.slug || property.id}`;
+  const shareTitle = `${property.title} | ${property.location} (Ref: ${refId})`;
+
+  const copyToClipboard = () => {
+    if (navigator.clipboard) {
+      navigator.clipboard.writeText(currentUrl);
+      setCopied(true);
+      toast.success("Property link copied to clipboard!");
+      setTimeout(() => setCopied(false), 2500);
+    }
+  };
+
   const schema = {
     "@context": "https://schema.org", "@type": "Residence", name: property.title,
     description: property.description, address: property.location,
@@ -79,10 +111,17 @@ export default function PropertyDetail() {
       <SEO title={`${property.title} | ${property.location} | Homes Finder`} description={property.description?.slice(0, 155)} path={`/property/${property.slug}`} schema={schema} />
 
       <div className="bg-white border-b border-slate-200">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-3 text-sm text-slate-500 flex items-center gap-2 flex-wrap" data-testid="breadcrumbs">
-          <Link to="/" className="hover:text-amber-600">Home</Link><span>/</span>
-          <Link to={property.purpose === "rent" ? "/rent" : "/buy"} className="hover:text-amber-600 capitalize">{property.purpose === "rent" ? "Rent" : "Buy"}</Link><span>/</span>
-          <span className="text-slate-800">{property.title}</span>
+        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-3 text-sm text-slate-500 flex items-center justify-between gap-2 flex-wrap" data-testid="breadcrumbs">
+          <div className="flex items-center gap-2 flex-wrap">
+            <Link to="/" className="hover:text-amber-600">Home</Link><span>/</span>
+            <Link to={property.purpose === "rent" ? "/rent" : "/buy"} className="hover:text-amber-600 capitalize">{property.purpose === "rent" ? "Rent" : "Buy"}</Link><span>/</span>
+            <span className="text-slate-800 font-medium truncate max-w-[200px] sm:max-w-md">{property.title}</span>
+          </div>
+          {refId && (
+            <span className="font-mono text-xs font-semibold text-amber-700 bg-amber-50 px-2.5 py-1 rounded-md border border-amber-300">
+              Reference ID: {refId}
+            </span>
+          )}
         </div>
       </div>
 
@@ -105,6 +144,11 @@ export default function PropertyDetail() {
           <div className="lg:col-span-2 space-y-8">
             <div>
               <div className="flex items-center gap-2 flex-wrap mb-3">
+                {refId && (
+                  <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-100 font-mono font-bold text-xs border border-amber-300">
+                    Ref: {refId}
+                  </Badge>
+                )}
                 {property.featured && <Badge className="bg-amber-500 text-slate-950 hover:bg-amber-500 font-semibold">Featured</Badge>}
                 {property.status === "offplan" ? (
                   <Badge className="bg-slate-900 text-white hover:bg-slate-900">Off-Plan</Badge>
@@ -112,6 +156,9 @@ export default function PropertyDetail() {
                   <Badge className="bg-slate-800 text-slate-100 hover:bg-slate-800">Ready</Badge>
                 )}
                 <Badge variant="outline" className="capitalize font-medium">{property.purpose === "rent" ? "For Rent" : "For Sale"}</Badge>
+                <Badge className="bg-slate-100 text-slate-800 border border-slate-300 font-medium">
+                  {furnishing}
+                </Badge>
                 {property.developer ? (
                   <Badge className="bg-slate-900 text-amber-300 border border-amber-500/30 font-medium">By {property.developer}</Badge>
                 ) : property.is_demo ? (
@@ -119,11 +166,74 @@ export default function PropertyDetail() {
                 ) : null}
               </div>
               <h1 className="font-serif text-3xl sm:text-4xl font-bold text-slate-900">{property.title}</h1>
-              <p className="flex items-center gap-1.5 text-slate-500 mt-2"><MapPin className="h-4 w-4 text-amber-500" />{property.location}</p>
+              <div className="flex items-center justify-between flex-wrap gap-2 mt-2">
+                <p className="flex items-center gap-1.5 text-slate-500"><MapPin className="h-4 w-4 text-amber-500 shrink-0" />{property.location}</p>
+                {postedDate && (
+                  <p className="flex items-center gap-1 text-xs text-slate-400">
+                    <Calendar className="h-3.5 w-3.5 text-amber-500" /> Posted Date: <strong className="text-slate-700 font-medium">{postedDate}</strong>
+                  </p>
+                )}
+              </div>
               <div className="mt-4 font-serif text-3xl font-bold text-amber-600" data-testid="detail-price">{formatAED(property.price)}<span className="text-base font-normal text-slate-500">{period}</span></div>
             </div>
 
+            {/* Social Share & Direct Access Bar */}
+            <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 flex items-center justify-between flex-wrap gap-3">
+              <div className="flex items-center gap-2 text-sm font-semibold text-slate-800">
+                <Share2 className="h-4 w-4 text-amber-600" /> Share this Property:
+              </div>
+              <div className="flex items-center gap-2 flex-wrap">
+                <a
+                  href={`https://api.whatsapp.com/send?text=${encodeURIComponent(`Check out this property on Homes Finder: ${shareTitle} - ${currentUrl}`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#25D366] text-white text-xs font-semibold hover:bg-[#20bd5a] transition-colors shadow-sm"
+                  title="Share on WhatsApp"
+                >
+                  <MessageCircle className="h-3.5 w-3.5" /> WhatsApp
+                </a>
+                <a
+                  href={`https://www.facebook.com/sharer/sharer.php?u=${encodeURIComponent(currentUrl)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#1877F2] text-white text-xs font-semibold hover:bg-[#166fe5] transition-colors shadow-sm"
+                  title="Share on Facebook"
+                >
+                  Facebook
+                </a>
+                <a
+                  href={`https://www.linkedin.com/sharing/share-offsite/?url=${encodeURIComponent(currentUrl)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-[#0A66C2] text-white text-xs font-semibold hover:bg-[#095196] transition-colors shadow-sm"
+                  title="Share on LinkedIn"
+                >
+                  LinkedIn
+                </a>
+                <a
+                  href={`https://twitter.com/intent/tweet?text=${encodeURIComponent(shareTitle)}&url=${encodeURIComponent(currentUrl)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-slate-900 text-white text-xs font-semibold hover:bg-black transition-colors shadow-sm"
+                  title="Share on X"
+                >
+                  X (Twitter)
+                </a>
+                <button
+                  onClick={copyToClipboard}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-white border border-slate-300 text-slate-700 text-xs font-semibold hover:bg-slate-100 transition-colors shadow-sm"
+                  title="Copy link to clipboard"
+                >
+                  {copied ? <Check className="h-3.5 w-3.5 text-emerald-600" /> : <Copy className="h-3.5 w-3.5" />}
+                  {copied ? "Copied!" : "Copy Link"}
+                </button>
+              </div>
+            </div>
+
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              <Spec icon={Hash} label="Property Ref ID" value={refId || "—"} />
+              <Spec icon={Calendar} label="Posted Date" value={postedDate || "Recently"} />
+              <Spec icon={Armchair} label="Furnishing" value={furnishing} />
               <Spec icon={BedDouble} label="Bedrooms" value={property.bedrooms === 0 ? "Studio" : property.bedrooms} />
               <Spec icon={Bath} label="Bathrooms" value={property.bathrooms} />
               <Spec icon={Maximize} label="Built-up Area" value={property.area ? `${property.area.toLocaleString()} sq.ft.` : "—"} />

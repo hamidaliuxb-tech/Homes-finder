@@ -7,14 +7,17 @@ import LeadsTab from "@/pages/admin/LeadsTab";
 import SettingsTab from "@/pages/admin/SettingsTab";
 import ApprovalsTab from "@/pages/admin/ApprovalsTab";
 import CustomersTab from "@/pages/admin/CustomersTab";
+import LegalServicesTab from "@/pages/admin/LegalServicesTab";
 import { useAuth } from "@/context/AuthContext";
 import { api } from "@/lib/apiClient";
+import { Scale } from "lucide-react";
 
 const TABS = [
   { key: "approvals", label: "Approvals", icon: ClipboardCheck },
   { key: "properties", label: "Properties", icon: Home },
   { key: "customers", label: "Customers", icon: Users },
   { key: "leads", label: "Leads / CRM", icon: Users },
+  { key: "legal", label: "Legal Services & CMS", icon: Scale },
   { key: "content", label: "Website Content", icon: SettingsIcon },
 ];
 
@@ -84,6 +87,7 @@ export default function AdminDashboard() {
         {tab === "properties" && <PropertiesTab />}
         {tab === "customers" && <CustomersTab />}
         {tab === "leads" && <LeadsTab />}
+        {tab === "legal" && <LegalServicesTab />}
         {tab === "content" && <SettingsTab />}
       </div>
     </div>

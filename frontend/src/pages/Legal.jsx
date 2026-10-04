@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import {
   ShieldCheck,
@@ -10,23 +10,36 @@ import {
   Mail,
   Phone,
   ChevronRight,
+  Scale,
 } from "lucide-react";
 import SEO from "@/components/SEO";
 import { PageHero, Section } from "@/components/Primitives";
 import { useSettings } from "@/context/SettingsContext";
+import { api } from "@/lib/apiClient";
 
-const LEGAL_DOCS = [
-  { slug: "privacy-policy", title: "Privacy Policy", icon: ShieldCheck },
-  { slug: "terms", title: "Terms & Conditions", icon: FileText },
-  { slug: "cookie-policy", title: "Cookie Policy", icon: Cookie },
-  { slug: "real-estate-disclaimer", title: "Real Estate Disclaimer", icon: Building },
-  { slug: "investment-disclaimer", title: "Investment Disclaimer", icon: AlertTriangle },
+const ICON_MAP = {
+  ShieldCheck,
+  FileText,
+  Cookie,
+  Building,
+  AlertTriangle,
+  Scale,
+};
+
+const DEFAULT_LEGAL_DOCS = [
+  { slug: "privacy-policy", title: "Privacy Policy", icon: "ShieldCheck", category: "legal_policy" },
+  { slug: "terms", title: "Terms & Conditions", icon: "FileText", category: "legal_policy" },
+  { slug: "cookie-policy", title: "Cookie Policy", icon: "Cookie", category: "legal_policy" },
+  { slug: "real-estate-disclaimer", title: "Real Estate Disclaimer", icon: "Building", category: "disclaimer" },
+  { slug: "investment-disclaimer", title: "Investment Disclaimer", icon: "AlertTriangle", category: "disclaimer" },
+  { slug: "legal-conveyancing-services", title: "Legal Conveyancing & Advisory", icon: "Scale", category: "legal_service" },
 ];
 
-const CONTENT = {
+const DEFAULT_CONTENT = {
   "privacy-policy": {
     title: "Privacy Policy",
     subtitle: "How Homes Finder collects, manages, and safeguards your personal data.",
+    category: "legal_policy",
     body: [
       "Homes Finder respects your privacy. This policy explains how we collect, use and protect the information you provide through our website.",
       "We collect information you submit via enquiry and consultation forms (such as your name, mobile number and email) to respond to your request and provide our services.",
@@ -37,6 +50,7 @@ const CONTENT = {
   terms: {
     title: "Terms & Conditions",
     subtitle: "Terms and conditions governing the use of the Homes Finder portal and services.",
+    category: "legal_policy",
     body: [
       "By using this website you agree to these terms. The content on this website is provided for general information purposes only.",
       "Property listings labelled as 'Demo Property' are illustrative and do not represent actual available inventory unless confirmed by Homes Finder.",
@@ -47,6 +61,7 @@ const CONTENT = {
   "cookie-policy": {
     title: "Cookie Policy",
     subtitle: "Information regarding cookies and web technologies used on this website.",
+    category: "legal_policy",
     body: [
       "This website may use cookies and similar technologies to improve your browsing experience and understand how the site is used.",
       "You can control or delete cookies through your browser settings. Disabling cookies may affect some functionality.",
@@ -55,6 +70,7 @@ const CONTENT = {
   "real-estate-disclaimer": {
     title: "Real Estate Disclaimer",
     subtitle: "Important disclaimers and notices regarding UAE property listings and details.",
+    category: "disclaimer",
     body: [
       "All property information, images, prices and specifications on this website are provided for general guidance and may change without notice.",
       "Demo properties are clearly labelled and are used for demonstration purposes only until actual company listings are added.",
@@ -64,10 +80,21 @@ const CONTENT = {
   "investment-disclaimer": {
     title: "Investment Disclaimer",
     subtitle: "Advisory notices concerning property valuation, yields, and investment returns.",
+    category: "disclaimer",
     body: [
       "Property values, rental yields, capital appreciation and investment returns are not guaranteed and depend on market conditions.",
       "Any figures, calculators or projections presented on this website are indicative and for illustration only. They do not constitute financial or investment advice.",
       "You should seek independent professional advice before making any property investment decision.",
+    ],
+  },
+  "legal-conveyancing-services": {
+    title: "Legal Conveyancing & Transaction Advisory",
+    subtitle: "Advisory and procedural support for UAE property conveyancing, title deed registrations, escrow and legal verification.",
+    category: "legal_service",
+    body: [
+      "Homes Finder provides procedural advisory for residential and commercial property conveyancing across Dubai and the UAE.",
+      "We coordinate with accredited UAE legal trustees, escrow banks, and the Dubai Land Department (DLD) to ensure seamless ownership transfer and full regulatory compliance.",
+      "Our advisory includes NOC clearance facilitation, mortgage discharge coordination, power of attorney (POA) advisory, and Form F contract structuring.",
     ],
   },
 };
@@ -75,8 +102,26 @@ const CONTENT = {
 export default function Legal() {
   const { slug } = useParams();
   const { settings } = useSettings();
+  const [legalDocs, setLegalDocs] = useState(DEFAULT_LEGAL_DOCS);
+  const [contentMap, setContentMap] = useState(DEFAULT_CONTENT);
+
+  useEffect(() => {
+    api.get("/legal")
+      .then((r) => {
+        if (r.data && Array.isArray(r.data) && r.data.length > 0) {
+          setLegalDocs(r.data);
+          const map = {};
+          r.data.forEach((d) => {
+            map[d.slug] = d;
+          });
+          setContentMap((prev) => ({ ...prev, ...map }));
+        }
+      })
+      .catch(() => {});
+  }, []);
+
   const currentSlug = slug || "privacy-policy";
-  const page = CONTENT[currentSlug] || CONTENT["privacy-policy"];
+  const page = contentMap[currentSlug] || DEFAULT_CONTENT[currentSlug] || DEFAULT_CONTENT["privacy-policy"];
   const c = settings?.contact || {};
 
   return (
@@ -99,9 +144,9 @@ export default function Legal() {
         {/* Mobile Document Selector */}
         <div className="lg:hidden mb-8 overflow-x-auto pb-2 scrollbar-none">
           <div className="flex gap-2 min-w-max">
-            {LEGAL_DOCS.map((doc) => {
+            {legalDocs.map((doc) => {
               const active = currentSlug === doc.slug;
-              const Icon = doc.icon;
+              const Icon = ICON_MAP[doc.icon] || ShieldCheck;
               return (
                 <Link
                   key={doc.slug}
@@ -125,11 +170,11 @@ export default function Legal() {
           <aside className="hidden lg:block lg:col-span-4">
             <div className="sticky top-28 bg-white border border-slate-200/80 rounded-2xl p-5 shadow-sm space-y-1">
               <div className="px-3 py-2 text-xs font-semibold uppercase tracking-wider text-slate-400 mb-2">
-                Legal Documents
+                Legal Documents &amp; Services
               </div>
-              {LEGAL_DOCS.map((doc) => {
+              {legalDocs.map((doc) => {
                 const active = currentSlug === doc.slug;
-                const Icon = doc.icon;
+                const Icon = ICON_MAP[doc.icon] || ShieldCheck;
                 return (
                   <Link
                     key={doc.slug}
