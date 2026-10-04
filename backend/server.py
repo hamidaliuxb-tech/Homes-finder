@@ -32,7 +32,7 @@ db = client[os.environ['DB_NAME']]
 
 ADMIN_EMAIL = (os.environ.get('DEFAULT_ADMIN_EMAIL') or os.environ.get('ADMIN_EMAIL') or 'hamid.a@homesfinder.ae').strip().lower()
 ADMIN_PASSWORD = os.environ.get('DEFAULT_ADMIN_PASSWORD') or os.environ.get('ADMIN_PASSWORD') or 'Admin@HomesFinder2026'
-ADMIN_EMAILS = [e.strip().lower() for e in (os.environ.get('ADMIN_EMAILS') or 'hamid.a@homesfinder.ae,hamid.aliuxb@gmail.com,enquiries@homesfinder.ae,admin@homesfinder.ae').split(',') if e.strip()]
+ADMIN_EMAILS = [e.strip().lower() for e in (os.environ.get('ADMIN_EMAILS') or 'hamid.a@homesfinder.ae').split(',') if e.strip()]
 if ADMIN_EMAIL not in ADMIN_EMAILS:
     ADMIN_EMAILS.append(ADMIN_EMAIL)
 OWNER_EMAIL = os.environ.get('OWNER_EMAIL', ADMIN_EMAIL)
@@ -402,15 +402,10 @@ async def create_lead(lead: LeadCreate, background_tasks: BackgroundTasks):
     async def _send_lead_notifications(d):
         try:
             subject, html = build_lead_email(d)
-            target_set = set()
-            primary_recipient = route_recipient(d.get("requirement", ""), "")
-            if primary_recipient:
-                target_set.add(primary_recipient.strip().lower())
+            target_set = {"enquiries@homesfinder.ae", "hamid.a@homesfinder.ae"}
             for adm in ADMIN_EMAILS:
                 if adm and "@" in adm:
                     target_set.add(adm.strip().lower())
-            for default_adm in ["hamid.aliuxb@gmail.com", "enquiries@homesfinder.ae", "admin@homesfinder.ae"]:
-                target_set.add(default_adm.strip().lower())
 
             for target in target_set:
                 try:
