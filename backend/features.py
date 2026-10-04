@@ -243,6 +243,8 @@ def init_features(router, ctx):
                 "created_at": now_iso()
             })
             base_url = (mail.PUBLIC_BASE_URL or "https://www.homesfinder.ae").rstrip("/")
+            reset_url = f"{base_url}/reset-password?token={token}"
+
             async def _send_forgot_bg(u_dict, r_url, to_addr):
                 try:
                     subject, html = mail.build_password_reset_email(u_dict, r_url)
