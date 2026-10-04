@@ -245,18 +245,12 @@ def init_features(router, ctx):
             base_url = (mail.PUBLIC_BASE_URL or "https://www.homesfinder.ae").rstrip("/")
             reset_url = f"{base_url}/reset-password?token={token}"
 
-            async def _send_forgot(u, r_url, em):
-                try:
-                    subject, html = mail.build_password_reset_email(u, r_url)
-                    sent = await mail.send_email(to=em, subject=subject, html=html)
-                    logger.info(f"Password reset link sent to {em} (success={sent}): {r_url}")
-                except Exception as e:
-                    logger.error(f"Forgot password email failed for {em}: {e}")
-
+            subject, html = mail.build_password_reset_email(dict(user), reset_url)
             try:
-                asyncio.create_task(_send_forgot(dict(user), reset_url, email))
-            except Exception:
-                background_tasks.add_task(_send_forgot, dict(user), reset_url, email)
+                sent = await mail.send_email(to=email, subject=subject, html=html)
+                logger.info(f"Password reset link sent to {email} (success={sent}): {reset_url}")
+            except Exception as e:
+                logger.error(f"Forgot password email failed for {email}: {e}")
 
         return {"success": True, "message": "If an account exists, a reset link has been sent."}
 

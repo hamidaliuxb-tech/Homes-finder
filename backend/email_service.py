@@ -82,6 +82,8 @@ def _assert_safe_email(subject: str, html: str) -> None:
             raise ValueError(f"Unsafe URL in email: {url!r}")
 
 
+import email.utils
+
 def _send_sync(to, subject, html, reply_to):
     msg = MIMEMultipart("alternative")
     msg["Subject"] = subject
@@ -89,12 +91,23 @@ def _send_sync(to, subject, html, reply_to):
     msg["To"] = to
     if reply_to:
         msg["Reply-To"] = reply_to
-    msg.attach(MIMEText(html, "html"))
+    msg["Date"] = email.utils.formatdate(localtime=True)
+    msg["Message-ID"] = email.utils.make_msgid(domain="homesfinder.ae")
+    msg["MIME-Version"] = "1.0"
+
+    # Plain text version for spam filters and accessibility
+    plain_text = re.sub(r'<style.*?</style>', '', html, flags=re.DOTALL | re.IGNORECASE)
+    plain_text = re.sub(r'<[^>]+>', ' ', plain_text)
+    plain_text = re.sub(r'\s+', ' ', plain_text).strip()
+
+    msg.attach(MIMEText(plain_text, "plain", "utf-8"))
+    msg.attach(MIMEText(html, "html", "utf-8"))
+
     use_ssl = SMTP_USE_SSL or SMTP_PORT == 465
     if use_ssl:
-        server = smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, timeout=5)
+        server = smtplib.SMTP_SSL(SMTP_HOST, SMTP_PORT, timeout=15)
     else:
-        server = smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=5)
+        server = smtplib.SMTP(SMTP_HOST, SMTP_PORT, timeout=15)
         if SMTP_USE_TLS:
             server.starttls()
     try:
