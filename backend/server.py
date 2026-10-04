@@ -406,27 +406,22 @@ async def delete_property(prop_id: str, admin=Depends(require_admin)):
 async def test_email_endpoint(req: Request):
     data = await req.json()
     to = data.get("to", "hamid.a@homesfinder.ae")
-    from email_service import _send_sync, SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_FROM
+    port = int(data.get("port", 587))
+    host = data.get("host", "smtp.hostinger.com")
+    import smtplib
+    import ssl
+    import traceback
     try:
-        _send_sync(to, "Test Password Reset Delivery", "<p>Test delivery from Homes Finder</p>", None)
-        return {
-            "success": True,
-            "to": to,
-            "smtp_host": SMTP_HOST,
-            "smtp_port": SMTP_PORT,
-            "smtp_user": SMTP_USER,
-            "smtp_from": SMTP_FROM
-        }
+        if port == 465:
+            server = smtplib.SMTP_SSL(host, port, timeout=10)
+        else:
+            server = smtplib.SMTP(host, port, timeout=10)
+            server.starttls(context=ssl.create_default_context())
+        server.login("enquiries@homesfinder.ae", "Homes@2026")
+        server.quit()
+        return {"success": True, "host": host, "port": port, "msg": "Authenticated successfully!"}
     except Exception as e:
-        import traceback
-        return {
-            "success": False,
-            "error": str(e),
-            "traceback": traceback.format_exc(),
-            "smtp_host": SMTP_HOST,
-            "smtp_port": SMTP_PORT,
-            "smtp_user": SMTP_USER
-        }
+        return {"success": False, "host": host, "port": port, "error": str(e), "traceback": traceback.format_exc()}
 
 @api_router.post("/leads")
 async def create_lead(lead: LeadCreate, background_tasks: BackgroundTasks):
