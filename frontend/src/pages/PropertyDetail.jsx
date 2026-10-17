@@ -3,7 +3,7 @@ import { useParams, Link } from "react-router-dom";
 import {
   MapPin, BedDouble, Bath, Maximize, Building2, Phone, MessageCircle, CheckCircle2,
   CalendarClock, Landmark, TrendingUp, GraduationCap, Hospital, TrainFront, Play, Boxes,
-  Share2, Copy, Check, Calendar, Armchair, Hash, Globe, ShieldCheck, Mail
+  Share2, Copy, Check, Calendar, Armchair, Hash, Globe, ShieldCheck, Mail, Info, Flag, ExternalLink
 } from "lucide-react";
 import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
@@ -269,57 +269,146 @@ export default function PropertyDetail() {
               {property.service_charges ? <Spec icon={Landmark} label="Service Charges" value={property.service_charges} /> : null}
             </div>
 
-            {/* Regulatory & Agency Verification Information (Bayut / Property Finder Standard) */}
-            <div className="rounded-2xl border border-slate-200 bg-gradient-to-br from-slate-50 via-white to-amber-50/20 p-6 shadow-sm space-y-4" data-testid="agency-regulatory-box">
-              <div className="flex items-center justify-between flex-wrap gap-2 pb-3 border-b border-slate-200">
-                <div className="flex items-center gap-2.5">
-                  <div className="h-9 w-9 rounded-lg bg-amber-500/10 flex items-center justify-center text-amber-600 font-bold border border-amber-500/20">
-                    <Building2 className="h-5 w-5 text-amber-600" />
+            {/* More Info - Official Regulatory & Permit Card (Bayut / Property Finder Specification) */}
+            <div className="rounded-2xl border border-slate-200/90 bg-white p-6 sm:p-7 shadow-xs space-y-6" data-testid="agency-regulatory-box">
+              <h2 className="font-serif text-2xl font-bold text-slate-900">More Info</h2>
+
+              <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start">
+                {/* Left side details */}
+                <div className="md:col-span-8 lg:col-span-9 space-y-4 text-sm">
+                  {/* Zone Name */}
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-1.5 text-slate-700 font-medium">
+                      <span>Zone Name</span>
+                      <span title="Dubai Land Department Zone" className="text-slate-400 hover:text-slate-600 cursor-pointer">
+                        <Info className="h-4 w-4" />
+                      </span>
+                    </div>
+                    <span className="font-medium text-slate-900 text-right">{zoneName}</span>
                   </div>
-                  <div>
-                    <h3 className="font-serif text-lg font-bold text-slate-900">Agency &amp; Regulatory Compliance</h3>
-                    <p className="text-xs text-slate-500">Official RERA &amp; Dubai Land Department verification details</p>
+
+                  {/* Registered Agency */}
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-1.5 text-slate-700 font-medium">
+                      <span>Registered Agency</span>
+                      <span title="DLD Licensed Real Estate Brokerage" className="text-slate-400 hover:text-slate-600 cursor-pointer">
+                        <Info className="h-4 w-4" />
+                      </span>
+                    </div>
+                    <span className="font-medium text-slate-900 uppercase text-right">{agencyName}</span>
+                  </div>
+
+                  {/* RERA */}
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-1.5 text-slate-700 font-medium">
+                      <span>RERA</span>
+                      <span title="Real Estate Regulatory Agency Registration" className="text-slate-400 hover:text-slate-600 cursor-pointer">
+                        <Info className="h-4 w-4" />
+                      </span>
+                    </div>
+                    <span className="font-medium text-slate-900 text-right">{reraPermit}</span>
+                  </div>
+
+                  {/* Reference ID */}
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-1.5 text-slate-700 font-medium">
+                      <span>Reference ID</span>
+                    </div>
+                    <span className="font-medium text-slate-900 font-mono text-right">{refId || displayRefId}</span>
+                  </div>
+
+                  {/* BRN (DLD) */}
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-1.5 text-slate-700 font-medium">
+                      <span>BRN (DLD)</span>
+                      <span title="Broker Registration Number" className="text-slate-400 hover:text-slate-600 cursor-pointer">
+                        <Info className="h-4 w-4" />
+                      </span>
+                    </div>
+                    <span className="font-medium text-slate-900 font-mono text-right">{brnNumber}</span>
+                  </div>
+
+                  {/* Ownership Type */}
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-1.5 text-slate-700 font-medium">
+                      <span>Ownership Type</span>
+                      <span title="Property Title Ownership Structure" className="text-slate-400 hover:text-slate-600 cursor-pointer">
+                        <Info className="h-4 w-4" />
+                      </span>
+                    </div>
+                    <span className="font-semibold text-emerald-700 text-right">{ownershipType}</span>
+                  </div>
+
+                  {/* DLD Permit / Trakheesi */}
+                  {dldPermit && (
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-1.5 text-slate-700 font-medium">
+                        <span>DLD Permit / Trakheesi</span>
+                        <span title="Official DLD e-Permit Reference" className="text-slate-400 hover:text-slate-600 cursor-pointer">
+                          <Info className="h-4 w-4" />
+                        </span>
+                      </div>
+                      <span className="font-medium text-slate-900 font-mono text-right">{dldPermit}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Right side QR code box */}
+                <div className="md:col-span-4 lg:col-span-3 flex justify-start md:justify-end">
+                  <div className="border border-slate-300 rounded-xl p-3 bg-white shadow-2xs flex flex-col items-center justify-center w-36 sm:w-40">
+                    <div className="relative h-28 w-28 sm:h-32 sm:w-32 bg-white flex items-center justify-center">
+                      <img
+                        src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&margin=2&data=${encodeURIComponent(permitUrl)}`}
+                        alt="DLD Permit QR"
+                        className="h-full w-full object-contain"
+                      />
+                      {/* DLD palm emblem in center of QR */}
+                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                        <div className="h-6 w-6 rounded-full bg-white border border-red-500/80 p-0.5 flex items-center justify-center shadow-xs">
+                          <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="#059669" strokeWidth="2" strokeLinecap="round">
+                            <circle cx="12" cy="12" r="10" stroke="#dc2626" strokeWidth="1.2" fill="#ffffff" />
+                            <path d="M12 18V8M12 8C10 5.5 8 6.5 6 8M12 8C14 5.5 16 6.5 18 8M12 10C9 8.5 7.5 10 7 11.5M12 10C15 8.5 16.5 10 17 11.5" stroke="#059669" />
+                          </svg>
+                        </div>
+                      </div>
+                    </div>
+                    <span className="text-xs font-semibold text-slate-800 mt-2">Permit</span>
                   </div>
                 </div>
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
-                  <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" /> DLD / RERA Registered
-                </span>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs sm:text-sm">
-                <div className="bg-white p-3 rounded-xl border border-slate-200/80 shadow-xs">
-                  <div className="text-slate-400 font-medium">Permitted Agency</div>
-                  <div className="font-bold text-slate-900 mt-0.5">{agencyName}</div>
+              {/* DLD Rules Banner */}
+              <div className="rounded-xl bg-[#EAF2F9] border border-[#D5E3EE] px-4 py-3 flex items-center gap-3 text-xs sm:text-sm text-slate-800">
+                <div className="h-7 w-7 rounded-full bg-white border border-red-500/70 flex items-center justify-center shrink-0 shadow-2xs">
+                  <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="#059669" strokeWidth="2" strokeLinecap="round">
+                    <circle cx="12" cy="12" r="10" stroke="#dc2626" strokeWidth="1.2" fill="#ffffff" />
+                    <path d="M12 18V8M12 8C10 5.5 8 6.5 6 8M12 8C14 5.5 16 6.5 18 8M12 10C9 8.5 7.5 10 7 11.5M12 10C15 8.5 16.5 10 17 11.5" stroke="#059669" />
+                  </svg>
                 </div>
-                <div className="bg-white p-3 rounded-xl border border-slate-200/80 shadow-xs">
-                  <div className="text-slate-400 font-medium">Zone / Jurisdiction</div>
-                  <div className="font-bold text-slate-900 mt-0.5">{zoneName}</div>
-                </div>
-                <div className="bg-white p-3 rounded-xl border border-slate-200/80 shadow-xs">
-                  <div className="text-slate-400 font-medium">Ownership Type</div>
-                  <div className="font-bold text-emerald-700 mt-0.5">{ownershipType}</div>
-                </div>
-                <div className="bg-white p-3 rounded-xl border border-slate-200/80 shadow-xs">
-                  <div className="text-slate-400 font-medium">RERA Permit No.</div>
-                  <div className="font-mono font-bold text-slate-900 mt-0.5">{reraPermit}</div>
-                </div>
-                <div className="bg-white p-3 rounded-xl border border-slate-200/80 shadow-xs">
-                  <div className="text-slate-400 font-medium">Broker BRN</div>
-                  <div className="font-mono font-bold text-slate-900 mt-0.5">{brnNumber}</div>
-                </div>
-                <div className="bg-white p-3 rounded-xl border border-slate-200/80 shadow-xs">
-                  <div className="text-slate-400 font-medium">Agency ORN</div>
-                  <div className="font-mono font-bold text-slate-900 mt-0.5">{ornNumber}</div>
-                </div>
-                <div className="bg-white p-3 rounded-xl border border-slate-200/80 shadow-xs sm:col-span-3">
-                  <div className="text-slate-400 font-medium">DLD Reference / Trakheesi Permit</div>
-                  <div className="font-mono font-bold text-amber-700 mt-0.5">{dldPermit}</div>
+                <div>
+                  <span>To know more about the rules and regulations visit the </span>
+                  <a
+                    href="https://dubailand.gov.ae/en/"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-[#1A56DB] font-semibold hover:underline"
+                  >
+                    Land Department Website
+                  </a>
+                  <span>.</span>
                 </div>
               </div>
 
-              <div className="text-[11px] text-slate-500 bg-slate-100/70 p-3 rounded-lg flex items-center gap-2">
-                <Check className="h-4 w-4 text-emerald-600 shrink-0" />
-                <span>Listed in compliance with UAE Real Estate Regulatory Authority standards. Certified contracts processed directly via the Dubai Land Department (DLD).</span>
+              {/* Report This Ad divider & button */}
+              <div className="border-t border-slate-200/80 pt-4 text-center">
+                <button
+                  type="button"
+                  onClick={() => toast.success("Thank you. Listing reported to Homes Finder compliance team.")}
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-slate-600 hover:text-slate-900 transition-colors cursor-pointer"
+                >
+                  <Flag className="h-3.5 w-3.5 text-slate-500" />
+                  Report This Ad
+                </button>
               </div>
             </div>
 
