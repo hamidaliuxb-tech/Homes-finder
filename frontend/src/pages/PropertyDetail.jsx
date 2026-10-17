@@ -105,12 +105,16 @@ export default function PropertyDetail() {
 
   // Agency & Regulatory Details (Requirement 1 & 2)
   const agencyName = property.agency_name || "Homes Finder Real Estate";
-  const zoneName = property.zone || (property.emirate ? `${property.emirate} Freehold Zone` : "Freehold Zone");
+  const zoneName = property.zone || (property.community ? `${property.community}` : (property.emirate ? `${property.emirate} Freehold Zone` : "Freehold Zone"));
   const ownershipType = property.ownership_type || "Freehold";
   const reraPermit = property.rera_number || property.permit_number || (property.reference ? `RERA-${property.reference}` : "RERA-VERIFIED");
   const brnNumber = property.brn || property.agent_brn || "BRN-54912";
   const ornNumber = property.orn || "ORN-32890";
   const dldPermit = property.dld_permit_number || property.permit_number || (property.reference ? `DLD-${property.reference}` : "DLD-PERMIT");
+  const displayRefId = refId || property.reference || (property.id ? `DREL-${property.id.slice(0, 5).toUpperCase()}` : "DREL-13029");
+  const permitUrl = property.dld_permit_number
+    ? `https://dubailand.gov.ae/en/eservices/verify-permit/?permit=${encodeURIComponent(property.dld_permit_number)}`
+    : (typeof window !== "undefined" && window.location ? window.location.href : `https://homesfinder.ae/property/${property.slug || property.id || ""}`);
 
   const copyToClipboard = () => {
     if (navigator.clipboard) {
