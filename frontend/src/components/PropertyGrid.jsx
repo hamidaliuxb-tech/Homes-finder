@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { useSearchParams } from "react-router-dom";
-import { SlidersHorizontal } from "lucide-react";
+import { SlidersHorizontal, Search, X } from "lucide-react";
 import PropertyCard from "@/components/PropertyCard";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
@@ -51,6 +51,7 @@ export default function PropertyGrid({ fixed = {}, title }) {
   const [maxPrice, setMaxPrice] = useState(searchParams.get("max_price") || "");
   const [status, setStatus] = useState(searchParams.get("status") || "all");
   const [sort, setSort] = useState("featured");
+  const [textSearch, setTextSearch] = useState("");
 
   // Instant 0ms cache initialization
   const [items, setItems] = useState(() => {
@@ -69,6 +70,28 @@ export default function PropertyGrid({ fixed = {}, title }) {
   const [loading, setLoading] = useState(() => items.length === 0);
   const [showFilters, setShowFilters] = useState(false);
 
+  // Live on-keystroke filter ("type karte hi aa jaye")
+  const displayItems = React.useMemo(() => {
+    if (!textSearch.trim()) return items;
+    const q = textSearch.trim().toLowerCase();
+    return items.filter((p) => {
+      const title = (p.title || "").toLowerCase();
+      const loc = (p.location || "").toLowerCase();
+      const comm = (p.community || "").toLowerCase();
+      const dev = (p.developer || "").toLowerCase();
+      const ref = (p.reference || p.id || "").toLowerCase();
+      const em = (p.emirate || "").toLowerCase();
+      return (
+        title.includes(q) ||
+        loc.includes(q) ||
+        comm.includes(q) ||
+        dev.includes(q) ||
+        ref.includes(q) ||
+        em.includes(q)
+      );
+    });
+  }, [items, textSearch]);
+
   const load = useCallback(async () => {
     try {
       const params = { ...fixed, sort };
@@ -83,13 +106,12 @@ export default function PropertyGrid({ fixed = {}, title }) {
       const res = await fetchWithRetry(() => api.get("/properties", { params }), 2, 2000);
       if (res && res.data) {
         setItems(res.data);
-        // If we fetched an unfiltered listing, also cache properties
         if (Object.keys(fixed).length === 0 && emirate === "all" && community === "all" && ptype === "all" && ownershipType === "all") {
           setCachedProperties(res.data);
         }
       }
     } catch {
-      // Retain already cached items on cold start failure
+      // Retain cached
     } finally {
       setLoading(false);
     }
@@ -106,29 +128,54 @@ export default function PropertyGrid({ fixed = {}, title }) {
     setBeds("all");
     setMaxPrice("");
     setStatus("all");
+    setTextSearch("");
     setSearchParams({});
   };
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6 gap-4 flex-wrap">
-        <div className="flex items-center gap-3">
-          <Button variant="outline" onClick={() => setShowFilters(!showFilters)} className="lg:hidden" data-testid="toggle-filters-btn">
+      <div className="flex items-center justify-between mb-6 gap-3 flex-wrap">
+        <div className="flex items-center gap-3 flex-1 min-w-[260px] max-w-lg">
+          <Button variant="outline" onClick={() => setShowFilters(!showFilters)} className="lg:hidden shrink-0" data-testid="toggle-filters-btn">
             <SlidersHorizontal className="h-4 w-4 mr-2" /> Filters
           </Button>
-          <span className="text-sm text-slate-500" data-testid="results-count">
-            {loading ? "Loading..." : `${items.length} propert${items.length === 1 ? "y" : "ies"}`}
-          </span>
+
+          {/* Instant live type-to-search input ("type karte hi aa jaye") */}
+          <div className="relative flex-1">
+            <Search className="h-4 w-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
+            <Input
+              value={textSearch}
+              onChange={(e) => setTextSearch(e.target.value)}
+              placeholder="Type to search properties, location, or developer..."
+              className="pl-9 pr-8 h-11 bg-white border-slate-200 text-sm placeholder:text-slate-400 shadow-2xs focus:border-amber-500"
+            />
+            {textSearch && (
+              <button
+                type="button"
+                onClick={() => setTextSearch("")}
+                className="absolute right-2.5 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 rounded-full"
+                title="Clear search"
+              >
+                <X className="h-3.5 w-3.5" />
+              </button>
+            )}
+          </div>
         </div>
-        <Select value={sort} onValueChange={setSort}>
-          <SelectTrigger className="w-[200px] h-11" data-testid="sort-select"><SelectValue /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="featured">Featured</SelectItem>
-            <SelectItem value="newest">Newest</SelectItem>
-            <SelectItem value="price_asc">Price: Low to High</SelectItem>
-            <SelectItem value="price_desc">Price: High to Low</SelectItem>
-          </SelectContent>
-        </Select>
+
+        <div className="flex items-center gap-3 shrink-0">
+          <span className="text-sm text-slate-500 whitespace-nowrap" data-testid="results-count">
+            {loading ? "Loading..." : `${displayItems.length} propert${displayItems.length === 1 ? "y" : "ies"}`}
+          </span>
+          <Select value={sort} onValueChange={setSort}>
+            <SelectTrigger className="w-[180px] h-11" data-testid="sort-select"><SelectValue /></SelectTrigger>
+            <SelectContent>
+              <SelectItem value="featured">Featured</SelectItem>
+              <SelectItem value="newest">Newest</SelectItem>
+              <SelectItem value="price_asc">Price: Low to High</SelectItem>
+              <SelectItem value="price_desc">Price: High to Low</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
@@ -219,14 +266,14 @@ export default function PropertyGrid({ fixed = {}, title }) {
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
               {[...Array(6)].map((_, i) => <Skeleton key={i} className="h-[380px] rounded-xl" />)}
             </div>
-          ) : items.length === 0 ? (
+          ) : displayItems.length === 0 ? (
             <div className="text-center py-24 bg-white rounded-xl border border-slate-200" data-testid="no-results">
               <p className="text-slate-500">No properties match your criteria.</p>
               <Button variant="outline" onClick={reset} className="mt-4">Clear Filters</Button>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-              {items.map((p, i) => <PropertyCard key={p.id} property={p} index={i} />)}
+              {displayItems.map((p, i) => <PropertyCard key={p.id} property={p} index={i} />)}
             </div>
           )}
         </div>
