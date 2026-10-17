@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { Building2, UserCheck, ShieldCheck } from "lucide-react";
+import { Building2, UserCheck, ShieldCheck, QrCode, Upload, X } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -9,7 +9,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import ImageUploader from "@/components/ImageUploader";
-import { api } from "@/lib/apiClient";
+import { api, fileUrl } from "@/lib/apiClient";
 import { useSettings } from "@/context/SettingsContext";
 import { EMIRATES, COMMUNITIES, PROPERTY_TYPES } from "@/data/site";
 
@@ -151,6 +151,57 @@ export default function PropertyEditor({ open, onClose, property, onSaved }) {
               <div><Label className="text-xs">Agency ORN (Office Reg No.)</Label><Input value={form.orn || ""} onChange={(e) => set("orn", e.target.value)} className="mt-1 text-xs font-mono" placeholder="32890" /></div>
               <div><Label className="text-xs">Broker BRN (Broker Reg No.)</Label><Input value={form.brn || ""} onChange={(e) => set("brn", e.target.value)} className="mt-1 text-xs font-mono" placeholder="54912" /></div>
               <div><Label className="text-xs">DLD Reference / Trakheesi Permit</Label><Input value={form.dld_permit_number || ""} onChange={(e) => set("dld_permit_number", e.target.value)} className="mt-1 text-xs font-mono" placeholder="e.g. DLD-2026-9812" /></div>
+            </div>
+
+            {/* Official Permit QR Code Upload */}
+            <div className="pt-2 border-t border-slate-200">
+              <Label className="text-xs font-semibold text-slate-800 block mb-1">
+                Official Permit QR Code (Trakheesi / DLD QR)
+              </Label>
+              <div className="flex items-center gap-3">
+                {form.permit_qr_code ? (
+                  <div className="relative h-16 w-16 rounded border border-slate-300 p-1 bg-white flex items-center justify-center shadow-xs">
+                    <img src={fileUrl(form.permit_qr_code)} alt="Permit QR" className="h-full w-full object-contain" />
+                    <button
+                      type="button"
+                      onClick={() => set("permit_qr_code", "")}
+                      className="absolute -top-1.5 -right-1.5 bg-red-600 text-white rounded-full p-0.5 hover:bg-red-700"
+                    >
+                      <X className="h-2.5 w-2.5" />
+                    </button>
+                  </div>
+                ) : (
+                  <div className="h-16 w-16 rounded border-2 border-dashed border-slate-300 flex items-center justify-center text-slate-400 bg-white">
+                    <QrCode className="h-6 w-6 text-slate-300" />
+                  </div>
+                )}
+                <label className="cursor-pointer">
+                  <input
+                    type="file"
+                    accept="image/*"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0];
+                      if (!file) return;
+                      const fd = new FormData();
+                      fd.append("file", file);
+                      try {
+                        const res = await api.post("/upload", fd);
+                        set("permit_qr_code", res.data.url);
+                        toast.success("Permit QR Code uploaded!");
+                      } catch {
+                        toast.error("Failed to upload QR Code");
+                      }
+                    }}
+                  />
+                  <Button type="button" variant="outline" size="sm" className="text-xs font-semibold" asChild>
+                    <span>
+                      <Upload className="h-3.5 w-3.5 mr-1" />
+                      {form.permit_qr_code ? "Change QR Image" : "Upload Permit QR Image"}
+                    </span>
+                  </Button>
+                </label>
+              </div>
             </div>
           </div>
 

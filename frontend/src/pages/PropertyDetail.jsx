@@ -361,20 +361,30 @@ export default function PropertyDetail() {
                 <div className="md:col-span-4 lg:col-span-3 flex justify-start md:justify-end">
                   <div className="border border-slate-300 rounded-xl p-3 bg-white shadow-2xs flex flex-col items-center justify-center w-36 sm:w-40">
                     <div className="relative h-28 w-28 sm:h-32 sm:w-32 bg-white flex items-center justify-center">
-                      <img
-                        src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&margin=2&data=${encodeURIComponent(permitUrl)}`}
-                        alt="DLD Permit QR"
-                        className="h-full w-full object-contain"
-                      />
-                      {/* DLD palm emblem in center of QR */}
-                      <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-                        <div className="h-6 w-6 rounded-full bg-white border border-red-500/80 p-0.5 flex items-center justify-center shadow-xs">
-                          <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="#059669" strokeWidth="2" strokeLinecap="round">
-                            <circle cx="12" cy="12" r="10" stroke="#dc2626" strokeWidth="1.2" fill="#ffffff" />
-                            <path d="M12 18V8M12 8C10 5.5 8 6.5 6 8M12 8C14 5.5 16 6.5 18 8M12 10C9 8.5 7.5 10 7 11.5M12 10C15 8.5 16.5 10 17 11.5" stroke="#059669" />
-                          </svg>
-                        </div>
-                      </div>
+                      {property.permit_qr_code ? (
+                        <img
+                          src={fileUrl(property.permit_qr_code)}
+                          alt="DLD Permit QR Code"
+                          className="h-full w-full object-contain"
+                        />
+                      ) : (
+                        <>
+                          <img
+                            src={`https://api.qrserver.com/v1/create-qr-code/?size=150x150&margin=2&data=${encodeURIComponent(permitUrl)}`}
+                            alt="DLD Permit QR"
+                            className="h-full w-full object-contain"
+                          />
+                          {/* DLD palm emblem in center of QR */}
+                          <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                            <div className="h-6 w-6 rounded-full bg-white border border-red-500/80 p-0.5 flex items-center justify-center shadow-xs">
+                              <svg viewBox="0 0 24 24" className="h-4 w-4" fill="none" stroke="#059669" strokeWidth="2" strokeLinecap="round">
+                                <circle cx="12" cy="12" r="10" stroke="#dc2626" strokeWidth="1.2" fill="#ffffff" />
+                                <path d="M12 18V8M12 8C10 5.5 8 6.5 6 8M12 8C14 5.5 16 6.5 18 8M12 10C9 8.5 7.5 10 7 11.5M12 10C15 8.5 16.5 10 17 11.5" stroke="#059669" />
+                              </svg>
+                            </div>
+                          </div>
+                        </>
+                      )}
                     </div>
                     <span className="text-xs font-semibold text-slate-800 mt-2">Permit</span>
                   </div>

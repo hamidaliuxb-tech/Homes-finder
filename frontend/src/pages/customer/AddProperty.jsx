@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { toast } from "sonner";
-import { Loader2, Send, Save, Plus, AlertCircle, ShieldCheck } from "lucide-react";
+import { Loader2, Send, Save, Plus, AlertCircle, ShieldCheck, QrCode, Upload, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -10,7 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import ImageUploader from "@/components/ImageUploader";
-import { api } from "@/lib/apiClient";
+import { api, fileUrl } from "@/lib/apiClient";
 import { useSettings } from "@/context/SettingsContext";
 import { useAuth } from "@/context/AuthContext";
 import { EMIRATES, COMMUNITIES, PROPERTY_TYPES } from "@/data/site";
@@ -120,7 +120,7 @@ export default function AddProperty() {
     city: "", building_name: "", location: "", price: "", price_period: "per year", rental_frequency: "Yearly",
     bedrooms: "", bathrooms: "", area: "", plot_area: "", furnished: "unfurnished", parking_spaces: "",
     status: "ready", availability_date: "", developer: "", completion_date: "", payment_plan: "",
-    ownership_type: "Freehold", agency_name: "", zone: "", rera_number: "", brn: "", orn: "32890", dld_permit_number: "",
+    ownership_type: "Freehold", agency_name: "", zone: "", rera_number: "", brn: "", orn: "32890", dld_permit_number: "", permit_qr_code: "",
     agent_name: "", agent_mobile: "", agent_whatsapp: "", agent_email: "",
     landlord_name: "", landlord_mobile: "", landlord_email: "",
     service_charges: "", rental_yield: "", amenities: [], images: [],
@@ -421,6 +421,70 @@ export default function AddProperty() {
                 <Fld label="Broker BRN"><Input value={f.brn} onChange={(e) => set("brn", e.target.value)} placeholder="e.g. 54912" /></Fld>
                 <Fld label="Agency ORN"><Input value={f.orn} onChange={(e) => set("orn", e.target.value)} placeholder="32890" /></Fld>
                 <Fld label="DLD Permit / Trakheesi"><Input value={f.dld_permit_number} onChange={(e) => set("dld_permit_number", e.target.value)} placeholder="e.g. DLD-2026-9812" /></Fld>
+              </div>
+
+              {/* DLD Permit QR Code Image Upload */}
+              <div className="pt-3 border-t border-slate-200">
+                <div className="flex items-center justify-between mb-1">
+                  <Label className="text-xs font-semibold text-slate-800">
+                    Official Permit QR Code (Trakheesi / DLD QR)
+                  </Label>
+                  {f.permit_qr_code && (
+                    <span className="text-[11px] text-emerald-600 font-semibold flex items-center gap-1">
+                      ✓ QR Code Uploaded
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-slate-500 mb-2.5">
+                  Upload the official QR code image issued for this listing by Dubai Land Department (DLD/Trakheesi).
+                </p>
+                <div className="flex items-center gap-4 flex-wrap">
+                  {f.permit_qr_code ? (
+                    <div className="relative h-20 w-20 rounded-lg border border-slate-300 p-1 bg-white flex items-center justify-center shadow-xs">
+                      <img src={fileUrl(f.permit_qr_code)} alt="Permit QR" className="h-full w-full object-contain" />
+                      <button
+                        type="button"
+                        onClick={() => set("permit_qr_code", "")}
+                        className="absolute -top-1.5 -right-1.5 bg-red-600 text-white rounded-full p-0.5 hover:bg-red-700 shadow-xs"
+                        title="Remove QR code"
+                      >
+                        <X className="h-3 w-3" />
+                      </button>
+                    </div>
+                  ) : (
+                    <div className="h-20 w-20 rounded-lg border-2 border-dashed border-slate-300 flex items-center justify-center text-slate-400 bg-white">
+                      <QrCode className="h-7 w-7 text-slate-300" />
+                    </div>
+                  )}
+
+                  <label className="cursor-pointer">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        if (!file) return;
+                        const fd = new FormData();
+                        fd.append("file", file);
+                        try {
+                          toast.info("Uploading QR Code...");
+                          const res = await api.post("/upload", fd);
+                          set("permit_qr_code", res.data.url);
+                          toast.success("Permit QR Code uploaded successfully!");
+                        } catch {
+                          toast.error("Failed to upload QR Code image");
+                        }
+                      }}
+                    />
+                    <Button type="button" variant="outline" size="sm" className="text-xs font-semibold" asChild>
+                      <span>
+                        <Upload className="h-3.5 w-3.5 mr-1.5" />
+                        {f.permit_qr_code ? "Change QR Code Image" : "Upload Official QR Code"}
+                      </span>
+                    </Button>
+                  </label>
+                </div>
               </div>
             </div>
           </>

@@ -158,6 +158,7 @@ class Property(BaseModel):
     agent_email: str = ""
     agent_brn: str = ""
     agent_photo: str = ""
+    permit_qr_code: str = ""
     landlord_name: str = ""
     landlord_mobile: str = ""
     landlord_email: str = ""
