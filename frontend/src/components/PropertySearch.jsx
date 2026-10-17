@@ -4,7 +4,8 @@ import { Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { EMIRATES, COMMUNITIES, PROPERTY_TYPES, BEDROOM_OPTIONS } from "@/data/site";
+import { EMIRATES, PROPERTY_TYPES, BEDROOM_OPTIONS } from "@/data/site";
+import CommunitySearchCombobox from "@/components/CommunitySearchCombobox";
 
 const TABS = [
   { key: "buy", label: "Buy" },
@@ -21,6 +22,7 @@ export default function PropertySearch({ variant = "hero" }) {
   const [beds, setBeds] = useState("all");
   const [maxPrice, setMaxPrice] = useState("");
   const [status, setStatus] = useState("all");
+  const [ownershipType, setOwnershipType] = useState("all");
 
   const submit = () => {
     const params = new URLSearchParams();
@@ -30,13 +32,12 @@ export default function PropertySearch({ variant = "hero" }) {
     if (beds !== "all") params.set("bedrooms", beds);
     if (maxPrice) params.set("max_price", maxPrice);
     if (status !== "all") params.set("status", status);
+    if (ownershipType !== "all") params.set("ownership_type", ownershipType);
     let base = "/buy";
     if (tab === "rent") base = "/rent";
     if (tab === "commercial") base = "/commercial";
     navigate(`${base}?${params.toString()}`);
   };
-
-  const communities = emirate !== "all" ? (COMMUNITIES[emirate] || []) : [];
 
   return (
     <div className={variant === "hero" ? "bg-white/95 backdrop-blur rounded-2xl shadow-2xl p-2 sm:p-3 border border-white/40 text-slate-900" : "bg-white rounded-2xl shadow-md border border-slate-200 p-3 text-slate-900"} data-testid="property-search">
@@ -62,13 +63,13 @@ export default function PropertySearch({ variant = "hero" }) {
           </SelectContent>
         </Select>
 
-        <Select value={community} onValueChange={setCommunity} disabled={communities.length === 0}>
-          <SelectTrigger data-testid="search-community" className="h-12 bg-slate-50 border-slate-200 text-slate-900 font-medium"><SelectValue placeholder="Community" /></SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">All Communities</SelectItem>
-            {communities.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
-          </SelectContent>
-        </Select>
+        <CommunitySearchCombobox
+          value={community}
+          onChange={setCommunity}
+          emirate={emirate}
+          placeholder="Type or select community..."
+          triggerClassName="h-12 font-medium"
+        />
 
         <Select value={ptype} onValueChange={setPtype}>
           <SelectTrigger data-testid="search-type" className="h-12 bg-slate-50 border-slate-200 text-slate-900 font-medium"><SelectValue placeholder="Property Type" /></SelectTrigger>
@@ -82,7 +83,7 @@ export default function PropertySearch({ variant = "hero" }) {
           <SelectTrigger data-testid="search-beds" className="h-12 bg-slate-50 border-slate-200 text-slate-900 font-medium"><SelectValue placeholder="Bedrooms" /></SelectTrigger>
           <SelectContent>
             <SelectItem value="all">Any Beds</SelectItem>
-            {BEDROOM_OPTIONS.map((b, i) => <SelectItem key={b} value={b === "Studio" ? "0" : b.replace("+", "")}>{b}</SelectItem>)}
+            {BEDROOM_OPTIONS.map((b) => <SelectItem key={b} value={b === "Studio" ? "0" : b.replace("+", "")}>{b}</SelectItem>)}
           </SelectContent>
         </Select>
 
@@ -99,9 +100,38 @@ export default function PropertySearch({ variant = "hero" }) {
         </Button>
       </div>
 
-      <div className="mt-2 flex flex-wrap gap-2 px-1">
-        <button onClick={() => setStatus(status === "ready" ? "all" : "ready")} className={`text-xs px-3 py-1 rounded-full border ${status === "ready" ? "bg-slate-900 text-white border-slate-900" : "border-slate-300 text-slate-600"}`} data-testid="search-status-ready">Ready</button>
-        <button onClick={() => setStatus(status === "offplan" ? "all" : "offplan")} className={`text-xs px-3 py-1 rounded-full border ${status === "offplan" ? "bg-slate-900 text-white border-slate-900" : "border-slate-300 text-slate-600"}`} data-testid="search-status-offplan">Off-Plan</button>
+      <div className="mt-2 flex flex-wrap gap-2 px-1 items-center">
+        <button
+          onClick={() => setStatus(status === "ready" ? "all" : "ready")}
+          className={`text-xs px-3 py-1 rounded-full border transition-colors ${status === "ready" ? "bg-slate-900 text-white border-slate-900" : "border-slate-300 text-slate-600 hover:bg-slate-50"}`}
+          data-testid="search-status-ready"
+        >
+          Ready
+        </button>
+        <button
+          onClick={() => setStatus(status === "offplan" ? "all" : "offplan")}
+          className={`text-xs px-3 py-1 rounded-full border transition-colors ${status === "offplan" ? "bg-slate-900 text-white border-slate-900" : "border-slate-300 text-slate-600 hover:bg-slate-50"}`}
+          data-testid="search-status-offplan"
+        >
+          Off-Plan
+        </button>
+
+        <span className="h-3 w-[1px] bg-slate-300 mx-1 hidden sm:inline-block" />
+
+        <button
+          onClick={() => setOwnershipType(ownershipType === "Freehold" ? "all" : "Freehold")}
+          className={`text-xs px-3 py-1 rounded-full border transition-colors ${ownershipType === "Freehold" ? "bg-emerald-700 text-white border-emerald-700" : "border-slate-300 text-slate-600 hover:bg-slate-50"}`}
+          data-testid="search-ownership-freehold"
+        >
+          Freehold
+        </button>
+        <button
+          onClick={() => setOwnershipType(ownershipType === "Leasehold" ? "all" : "Leasehold")}
+          className={`text-xs px-3 py-1 rounded-full border transition-colors ${ownershipType === "Leasehold" ? "bg-emerald-700 text-white border-emerald-700" : "border-slate-300 text-slate-600 hover:bg-slate-50"}`}
+          data-testid="search-ownership-leasehold"
+        >
+          Leasehold
+        </button>
       </div>
     </div>
   );

@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, Link } from "react-router-dom";
 import { toast } from "sonner";
-import { Loader2, Send, Save, Plus } from "lucide-react";
+import { Loader2, Send, Save, Plus, AlertCircle, ShieldCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,6 +12,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/u
 import ImageUploader from "@/components/ImageUploader";
 import { api } from "@/lib/apiClient";
 import { useSettings } from "@/context/SettingsContext";
+import { useAuth } from "@/context/AuthContext";
 import { EMIRATES, COMMUNITIES, PROPERTY_TYPES } from "@/data/site";
 
 const DEFAULT_TYPES = [
@@ -82,7 +83,10 @@ function QuickAddModal({ open, onClose, title, placeholder, onAdd }) {
 export default function AddProperty() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
   const { settings, reload: reloadSettings } = useSettings();
+
+  const isPendingAgent = user?.user_type === "Agent / Broker" && !user?.agent_verified;
 
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
@@ -116,6 +120,9 @@ export default function AddProperty() {
     city: "", building_name: "", location: "", price: "", price_period: "per year", rental_frequency: "Yearly",
     bedrooms: "", bathrooms: "", area: "", plot_area: "", furnished: "unfurnished", parking_spaces: "",
     status: "ready", availability_date: "", developer: "", completion_date: "", payment_plan: "",
+    ownership_type: "Freehold", agency_name: "", zone: "", rera_number: "", brn: "", orn: "32890", dld_permit_number: "",
+    agent_name: "", agent_mobile: "", agent_whatsapp: "", agent_email: "",
+    landlord_name: "", landlord_mobile: "", landlord_email: "",
     service_charges: "", rental_yield: "", amenities: [], images: [],
     contact_name: "", contact_mobile: "", contact_whatsapp: "", contact_email: "",
     use_registered_contact: true, show_phone: false, show_whatsapp: true, show_email: false,
@@ -238,14 +245,39 @@ export default function AddProperty() {
       <h1 className="font-serif text-3xl font-bold text-slate-900 mb-1">List Your Property</h1>
       <p className="text-slate-500 mb-6">Step {step} of 4 — {["Basics", "Details", "Photos & Amenities", "Contact & Review"][step - 1]}</p>
 
+      {isPendingAgent && (
+        <div className="rounded-xl border border-amber-300 bg-amber-50 p-4 mb-6 flex items-start gap-3 shadow-xs" data-testid="agent-pending-warning">
+          <AlertCircle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+          <div className="text-sm">
+            <div className="font-semibold text-amber-900">Agent Account Verification Required</div>
+            <p className="text-amber-800 mt-0.5">
+              Under UAE real estate regulations, your agent account must be verified and approved by Homes Finder before you can list properties.
+              Please submit your mandatory <strong>Trade Licence</strong> and <strong>Broker Card</strong> in your Account Settings.
+            </p>
+            <Link to="/dashboard/settings" className="inline-block mt-2 font-semibold text-amber-900 underline hover:text-black">
+              Go to Account Settings to submit credentials &rarr;
+            </Link>
+          </div>
+        </div>
+      )}
+
       <div className="bg-white rounded-xl border border-slate-200 p-6 space-y-5">
         {step === 1 && (
           <>
-            <div className="grid sm:grid-cols-2 gap-4">
+            <div className="grid sm:grid-cols-3 gap-4">
               <Fld label="Listing Purpose">
                 <Select value={f.purpose} onValueChange={(v) => set("purpose", v)}>
                   <SelectTrigger data-testid="ap-purpose"><SelectValue /></SelectTrigger>
                   <SelectContent><SelectItem value="buy">Sell</SelectItem><SelectItem value="rent">Rent</SelectItem></SelectContent>
+                </Select>
+              </Fld>
+              <Fld label="Ownership Type">
+                <Select value={f.ownership_type || "Freehold"} onValueChange={(v) => set("ownership_type", v)}>
+                  <SelectTrigger data-testid="ap-ownership"><SelectValue /></SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Freehold">Freehold</SelectItem>
+                    <SelectItem value="Leasehold">Leasehold</SelectItem>
+                  </SelectContent>
                 </Select>
               </Fld>
               <Fld
@@ -376,6 +408,21 @@ export default function AddProperty() {
                 <Fld label="Payment Plan"><Input value={f.payment_plan} onChange={(e) => set("payment_plan", e.target.value)} placeholder="e.g. 60/40 on handover" /></Fld>
               </div>
             )}
+
+            {/* Regulatory & Agency Verification Information */}
+            <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+              <div className="flex items-center gap-2 font-semibold text-sm text-slate-900">
+                <ShieldCheck className="h-4 w-4 text-amber-500" /> Regulatory &amp; Agency Details (RERA &amp; DLD)
+              </div>
+              <div className="grid sm:grid-cols-3 gap-3">
+                <Fld label="Permitted Agency Name"><Input value={f.agency_name} onChange={(e) => set("agency_name", e.target.value)} placeholder="Homes Finder Real Estate" /></Fld>
+                <Fld label="Zone / Jurisdiction"><Input value={f.zone} onChange={(e) => set("zone", e.target.value)} placeholder="e.g. Freehold Zone" /></Fld>
+                <Fld label="RERA Permit / Number"><Input value={f.rera_number} onChange={(e) => set("rera_number", e.target.value)} placeholder="e.g. 7128392100" /></Fld>
+                <Fld label="Broker BRN"><Input value={f.brn} onChange={(e) => set("brn", e.target.value)} placeholder="e.g. 54912" /></Fld>
+                <Fld label="Agency ORN"><Input value={f.orn} onChange={(e) => set("orn", e.target.value)} placeholder="32890" /></Fld>
+                <Fld label="DLD Permit / Trakheesi"><Input value={f.dld_permit_number} onChange={(e) => set("dld_permit_number", e.target.value)} placeholder="e.g. DLD-2026-9812" /></Fld>
+              </div>
+            </div>
           </>
         )}
 
@@ -449,6 +496,7 @@ export default function AddProperty() {
               <div className="grid sm:grid-cols-2 gap-2 text-sm text-slate-700">
                 <div><span className="text-slate-400">Title:</span> {f.title || "—"}</div>
                 <div><span className="text-slate-400">Purpose:</span> {isSale ? "For Sale" : "For Rent"}</div>
+                <div><span className="text-slate-400">Ownership:</span> {f.ownership_type || "Freehold"}</div>
                 <div><span className="text-slate-400">Type:</span> {resolvedType}</div>
                 <div><span className="text-slate-400">Developer:</span> {f.developer || "—"}</div>
                 <div><span className="text-slate-400">Location:</span> {f.location || f.community || "—"}</div>
@@ -462,13 +510,20 @@ export default function AddProperty() {
           </>
         )}
 
-        <div className="flex justify-between pt-4 border-t border-slate-100">
-          <Button variant="outline" disabled={step === 1} onClick={() => setStep(step - 1)} data-testid="ap-back">Back</Button>
-          <div className="flex gap-2">
-            <Button variant="outline" onClick={() => save(false)} disabled={loading} data-testid="ap-save-draft"><Save className="h-4 w-4 mr-1" />Save Draft</Button>
-            {step < 4 ? <Button onClick={() => setStep(step + 1)} className="bg-slate-900 text-white hover:bg-slate-800" data-testid="ap-next">Next</Button>
-              : <Button onClick={() => save(true)} disabled={loading} className="bg-amber-500 text-slate-950 hover:bg-amber-400 font-semibold" data-testid="ap-submit">{loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Send className="h-4 w-4 mr-1" />Submit for Approval</>}</Button>}
+        <div className="pt-4 border-t border-slate-100">
+          <div className="flex justify-between items-center flex-wrap gap-3">
+            <Button variant="outline" disabled={step === 1} onClick={() => setStep(step - 1)} data-testid="ap-back">Back</Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => save(false)} disabled={loading || isPendingAgent} data-testid="ap-save-draft"><Save className="h-4 w-4 mr-1" />Save Draft</Button>
+              {step < 4 ? <Button onClick={() => setStep(step + 1)} className="bg-slate-900 text-white hover:bg-slate-800" data-testid="ap-next">Next</Button>
+                : <Button onClick={() => save(true)} disabled={loading || isPendingAgent} className="bg-amber-500 text-slate-950 hover:bg-amber-400 font-semibold" data-testid="ap-submit">{loading ? <Loader2 className="h-4 w-4 animate-spin" /> : <><Send className="h-4 w-4 mr-1" />Submit for Approval</>}</Button>}
+            </div>
           </div>
+          {isPendingAgent && (
+            <p className="text-xs text-amber-700 mt-2 text-right">
+              Account pending verification. Please upload your Trade Licence and Broker Card in Profile Settings to unlock submission.
+            </p>
+          )}
         </div>
       </div>
     </div>

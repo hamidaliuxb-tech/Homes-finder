@@ -145,7 +145,22 @@ class Property(BaseModel):
     building_name: str = ""
     city: str = ""
     parking_spaces: Optional[int] = None
-    availability_date: str = ""
+    ownership_type: str = "Freehold"
+    agency_name: str = "Homes Finder Real Estate"
+    zone: str = "Freehold Zone"
+    rera_number: str = ""
+    brn: str = ""
+    orn: str = "32890"
+    dld_permit_number: str = ""
+    agent_name: str = ""
+    agent_mobile: str = ""
+    agent_whatsapp: str = ""
+    agent_email: str = ""
+    agent_brn: str = ""
+    agent_photo: str = ""
+    landlord_name: str = ""
+    landlord_mobile: str = ""
+    landlord_email: str = ""
     contact_name: str = ""
     contact_mobile: str = ""
     contact_whatsapp: str = ""
@@ -286,14 +301,26 @@ async def login(body: LoginRequest, request: Request, response: Response):
     token = create_access_token(uid, user["email"])
     set_auth_cookie(response, token)
     return {"id": uid, "user_id": uid, "email": user["email"], "name": user.get("name", "Admin"),
-            "role": role, "token": token}
+            "role": role, "token": token,
+            "user_type": user.get("user_type", ""), "status": user.get("status", "active"),
+            "agent_verified": user.get("agent_verified", False),
+            "agent_documents": user.get("agent_documents", {}),
+            "rejection_reason": user.get("rejection_reason", ""),
+            "mobile": user.get("mobile", ""), "emirate": user.get("emirate", ""), "company": user.get("company", "")}
 
 
 @api_router.get("/auth/me")
 async def auth_me(user=Depends(get_current_user)):
     uid = user.get("id") or user.get("user_id")
     role = "admin" if (user.get("email") in ADMIN_EMAILS or user.get("email") == ADMIN_EMAIL or user.get("role") == "admin") else user.get("role", "customer")
-    return {"id": uid, "user_id": uid, "email": user["email"], "name": user.get("name"), "role": role}
+    return {
+        "id": uid, "user_id": uid, "email": user["email"], "name": user.get("name"), "role": role,
+        "user_type": user.get("user_type", ""), "status": user.get("status", "active"),
+        "agent_verified": user.get("agent_verified", False),
+        "agent_documents": user.get("agent_documents", {}),
+        "rejection_reason": user.get("rejection_reason", ""),
+        "mobile": user.get("mobile", ""), "emirate": user.get("emirate", ""), "company": user.get("company", ""),
+    }
 
 
 @api_router.post("/auth/logout")
@@ -308,6 +335,7 @@ async def list_properties(
     purpose: Optional[str] = None, category: Optional[str] = None,
     property_type: Optional[str] = None, emirate: Optional[str] = None,
     community: Optional[str] = None, status: Optional[str] = None,
+    ownership_type: Optional[str] = None,
     min_price: Optional[float] = None, max_price: Optional[float] = None,
     bedrooms: Optional[int] = None, furnished: Optional[str] = None,
     featured: Optional[bool] = None, q: Optional[str] = None,
@@ -322,6 +350,8 @@ async def list_properties(
         query["category"] = category
     if property_type and property_type != "all":
         query["property_type"] = property_type
+    if ownership_type and ownership_type != "all":
+        query["ownership_type"] = ownership_type
     if emirate and emirate != "all":
         query["emirate"] = emirate
     if community and community != "all":
@@ -438,6 +468,18 @@ async def create_lead(lead: LeadCreate, background_tasks: BackgroundTasks):
             for adm in ADMIN_EMAILS:
                 if adm and "@" in adm:
                     target_set.add(adm.strip().lower())
+
+            if d.get("property_id"):
+                prop_match = await db.properties.find_one({"id": d["property_id"]}, {"_id": 0, "agent_email": 1, "contact_email": 1, "landlord_email": 1, "owner_id": 1})
+                if prop_match:
+                    for em_key in ("agent_email", "contact_email", "landlord_email"):
+                        em_val = (prop_match.get(em_key) or "").strip().lower()
+                        if em_val and "@" in em_val:
+                            target_set.add(em_val)
+                    if prop_match.get("owner_id"):
+                        owner = await db.users.find_one({"id": prop_match["owner_id"]}, {"_id": 0, "email": 1})
+                        if owner and owner.get("email"):
+                            target_set.add(owner["email"].strip().lower())
 
             for target in target_set:
                 try:
@@ -557,7 +599,16 @@ async def add_option(body: AddOptionReq, user=Depends(get_current_user)):
         if val not in comm_map[emirate]:
             comm_map[emirate].append(val)
         options["communities"] = comm_map
-    elif body.category in ["developers", "property_types", "amenities"]:
+    elif body.category == "emirates":
+        em_list = list(options.get("emirates") or DEFAULT_SETTINGS["options"].get("emirates", []))
+        if val not in em_list:
+            em_list.append(val)
+        options["emirates"] = em_list
+        comm_map = options.get("communities") or dict(DEFAULT_SETTINGS["options"]["communities"])
+        if val not in comm_map:
+            comm_map[val] = []
+        options["communities"] = comm_map
+    elif body.category in ["developers", "property_types", "amenities", "ownership_types"]:
         cat_list = list(options.get(body.category) or DEFAULT_SETTINGS["options"].get(body.category, []))
         if val not in cat_list:
             cat_list.append(val)
@@ -581,7 +632,10 @@ async def delete_option(body: DeleteOptionReq, admin=Depends(require_admin)):
         emirate = (body.emirate or "Dubai").strip()
         if emirate in options.get("communities", {}):
             options["communities"][emirate] = [c for c in options["communities"][emirate] if c != val]
-    elif body.category in ["developers", "property_types", "amenities"]:
+    elif body.category == "emirates":
+        if "emirates" in options:
+            options["emirates"] = [e for e in options["emirates"] if e != val]
+    elif body.category in ["developers", "property_types", "amenities", "ownership_types"]:
         if body.category in options:
             options[body.category] = [x for x in options[body.category] if x != val]
     doc["options"] = options

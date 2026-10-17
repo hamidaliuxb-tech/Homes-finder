@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { toast } from "sonner";
+import { Building2, UserCheck, ShieldCheck } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -23,6 +24,10 @@ const EMPTY = {
   title: "", purpose: "buy", category: "residential", property_type: "Apartment", status: "ready",
   availability: "available", emirate: "Dubai", community: "", location: "", price: 0, price_period: "",
   bedrooms: 0, bathrooms: 0, area: 0, plot_area: null, furnished: "unfurnished", developer: "",
+  ownership_type: "Freehold", agency_name: "Homes Finder Real Estate", zone: "Freehold Zone",
+  rera_number: "", brn: "", orn: "32890", dld_permit_number: "",
+  agent_name: "", agent_mobile: "", agent_whatsapp: "", agent_email: "", agent_brn: "",
+  landlord_name: "", landlord_mobile: "", landlord_email: "",
   completion_date: "", service_charges: "", handover: "", payment_plan: "", rental_yield: "", roi: "",
   description: "", features: [], amenities: [], location_advantages: [], nearby_schools: [],
   nearby_hospitals: [], nearby_transport: [], investment_highlights: [], images: [], video_url: "",
@@ -76,13 +81,16 @@ export default function PropertyEditor({ open, onClose, property, onSaved }) {
             <Input value={form.title} onChange={(e) => set("title", e.target.value)} className="mt-1.5" data-testid="pf-title" placeholder="e.g. Luxury 3 Bedroom Apartment" />
           </div>
 
-          <div className="grid sm:grid-cols-2 gap-4">
+          <div className="grid sm:grid-cols-3 gap-4">
             <div><Label>Purpose</Label>
               <Select value={form.purpose} onValueChange={(v) => set("purpose", v)}><SelectTrigger className="mt-1.5" data-testid="pf-purpose"><SelectValue /></SelectTrigger>
                 <SelectContent><SelectItem value="buy">Sell</SelectItem><SelectItem value="rent">Rent</SelectItem></SelectContent></Select></div>
             <div><Label>Category</Label>
               <Select value={form.category} onValueChange={(v) => set("category", v)}><SelectTrigger className="mt-1.5" data-testid="pf-category"><SelectValue /></SelectTrigger>
                 <SelectContent><SelectItem value="residential">Residential</SelectItem><SelectItem value="commercial">Commercial</SelectItem></SelectContent></Select></div>
+            <div><Label>Ownership Type</Label>
+              <Select value={form.ownership_type || "Freehold"} onValueChange={(v) => set("ownership_type", v)}><SelectTrigger className="mt-1.5" data-testid="pf-ownership"><SelectValue /></SelectTrigger>
+                <SelectContent><SelectItem value="Freehold">Freehold</SelectItem><SelectItem value="Leasehold">Leasehold</SelectItem></SelectContent></Select></div>
             <div><Label>Property Type</Label>
               <Select value={form.property_type} onValueChange={(v) => set("property_type", v)}><SelectTrigger className="mt-1.5" data-testid="pf-type"><SelectValue /></SelectTrigger>
                 <SelectContent>{PROPERTY_TYPES.map((t) => <SelectItem key={t} value={t}>{t}</SelectItem>)}</SelectContent></Select></div>
@@ -131,6 +139,37 @@ export default function PropertyEditor({ open, onClose, property, onSaved }) {
             <div><Label>Longitude</Label><Input type="number" value={form.lng ?? ""} onChange={num("lng")} className="mt-1.5" data-testid="pf-lng" /></div>
           </div>
 
+          {/* Agency & Regulatory Compliance Section */}
+          <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+            <h4 className="font-semibold text-sm text-slate-900 flex items-center gap-2">
+              <ShieldCheck className="h-4 w-4 text-amber-500" /> Agency &amp; Regulatory Compliance (RERA / DLD)
+            </h4>
+            <div className="grid sm:grid-cols-3 gap-3">
+              <div><Label className="text-xs">Permitted Agency Name</Label><Input value={form.agency_name || ""} onChange={(e) => set("agency_name", e.target.value)} className="mt-1 text-xs" placeholder="Homes Finder Real Estate" /></div>
+              <div><Label className="text-xs">Zone / Jurisdiction</Label><Input value={form.zone || ""} onChange={(e) => set("zone", e.target.value)} className="mt-1 text-xs" placeholder="Freehold Zone" /></div>
+              <div><Label className="text-xs">RERA Permit / Number</Label><Input value={form.rera_number || ""} onChange={(e) => set("rera_number", e.target.value)} className="mt-1 text-xs font-mono" placeholder="e.g. 7128392100" /></div>
+              <div><Label className="text-xs">Agency ORN (Office Reg No.)</Label><Input value={form.orn || ""} onChange={(e) => set("orn", e.target.value)} className="mt-1 text-xs font-mono" placeholder="32890" /></div>
+              <div><Label className="text-xs">Broker BRN (Broker Reg No.)</Label><Input value={form.brn || ""} onChange={(e) => set("brn", e.target.value)} className="mt-1 text-xs font-mono" placeholder="54912" /></div>
+              <div><Label className="text-xs">DLD Reference / Trakheesi Permit</Label><Input value={form.dld_permit_number || ""} onChange={(e) => set("dld_permit_number", e.target.value)} className="mt-1 text-xs font-mono" placeholder="e.g. DLD-2026-9812" /></div>
+            </div>
+          </div>
+
+          {/* Assigned Agent & Landlord Direct Contact Section */}
+          <div className="p-4 bg-slate-50 border border-slate-200 rounded-xl space-y-3">
+            <h4 className="font-semibold text-sm text-slate-900 flex items-center gap-2">
+              <UserCheck className="h-4 w-4 text-amber-500" /> Assigned Listing Agent / Landlord Direct Contact
+            </h4>
+            <div className="grid sm:grid-cols-4 gap-3">
+              <div><Label className="text-xs">Agent Name</Label><Input value={form.agent_name || ""} onChange={(e) => set("agent_name", e.target.value)} className="mt-1 text-xs" placeholder="Responsible Agent" /></div>
+              <div><Label className="text-xs">Agent Direct Mobile</Label><Input value={form.agent_mobile || ""} onChange={(e) => set("agent_mobile", e.target.value)} className="mt-1 text-xs" placeholder="+971 50 123 4567" /></div>
+              <div><Label className="text-xs">Agent WhatsApp</Label><Input value={form.agent_whatsapp || ""} onChange={(e) => set("agent_whatsapp", e.target.value)} className="mt-1 text-xs" placeholder="971501234567" /></div>
+              <div><Label className="text-xs">Agent Direct Email</Label><Input value={form.agent_email || ""} onChange={(e) => set("agent_email", e.target.value)} className="mt-1 text-xs" placeholder="agent@homesfinder.ae" /></div>
+              <div><Label className="text-xs">Landlord Name (optional)</Label><Input value={form.landlord_name || ""} onChange={(e) => set("landlord_name", e.target.value)} className="mt-1 text-xs" placeholder="Owner Name" /></div>
+              <div><Label className="text-xs">Landlord Mobile</Label><Input value={form.landlord_mobile || ""} onChange={(e) => set("landlord_mobile", e.target.value)} className="mt-1 text-xs" placeholder="+971 50 987 6543" /></div>
+              <div className="sm:col-span-2"><Label className="text-xs">Landlord Email</Label><Input value={form.landlord_email || ""} onChange={(e) => set("landlord_email", e.target.value)} className="mt-1 text-xs" placeholder="landlord@example.com" /></div>
+            </div>
+          </div>
+
           <div className="grid sm:grid-cols-2 gap-4">
             <div>
               <Label>Developer</Label>
@@ -150,7 +189,7 @@ export default function PropertyEditor({ open, onClose, property, onSaved }) {
             <div><Label>Service Charges</Label><Input value={form.service_charges} onChange={(e) => set("service_charges", e.target.value)} className="mt-1.5" data-testid="pf-service" /></div>
             <div><Label>Payment Plan</Label><Input value={form.payment_plan} onChange={(e) => set("payment_plan", e.target.value)} className="mt-1.5" data-testid="pf-payment" /></div>
             <div><Label>Rental Yield</Label><Input value={form.rental_yield} onChange={(e) => set("rental_yield", e.target.value)} className="mt-1.5" data-testid="pf-yield" placeholder="e.g. 6.2%" /></div>
-            <div><Label>Permit Number</Label><Input value={form.permit_number} onChange={(e) => set("permit_number", e.target.value)} className="mt-1.5" data-testid="pf-permit" /></div>
+            <div><Label>General Permit Number</Label><Input value={form.permit_number} onChange={(e) => set("permit_number", e.target.value)} className="mt-1.5" data-testid="pf-permit" /></div>
           </div>
 
           <div><Label>Description</Label><Textarea value={form.description} onChange={(e) => set("description", e.target.value)} className="mt-1.5 min-h-[100px]" data-testid="pf-description" /></div>

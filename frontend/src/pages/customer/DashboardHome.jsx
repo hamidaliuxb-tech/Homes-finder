@@ -36,6 +36,45 @@ export default function DashboardHome() {
         </div>
       )}
 
+      {/* Agent Account Verification Banner */}
+      {user?.user_type === "Agent / Broker" && !user?.agent_verified && (
+        <div
+          className={`mb-6 flex items-start justify-between gap-4 rounded-xl border p-4 text-sm ${
+            user?.status === "changes_required"
+              ? "border-amber-300 bg-amber-50 text-amber-900"
+              : user?.status === "pending_approval"
+              ? "border-blue-200 bg-blue-50 text-blue-900"
+              : "border-amber-300 bg-[#FAF5E8] text-slate-800"
+          }`}
+          data-testid="agent-verify-banner"
+        >
+          <div className="flex items-start gap-3">
+            <Clock className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+            <div>
+              <p className="font-bold text-slate-900">
+                {user?.status === "changes_required"
+                  ? "Action Required: Agent Credentials Revision"
+                  : user?.status === "pending_approval"
+                  ? "Agent Account Under Review (Trade Licence & Broker Card)"
+                  : "Agent Verification Required Before Listing Properties"}
+              </p>
+              <p className="text-xs text-slate-600 mt-1">
+                {user?.status === "changes_required"
+                  ? `Admin note: "${user?.rejection_reason || "Please update documents"}". Please update your credentials.`
+                  : user?.status === "pending_approval"
+                  ? "Your credentials have been submitted and are pending review by Homes Finder admin. Once verified, you will be authorized to list properties."
+                  : "Under UAE DLD/RERA regulations, agent accounts remain inactive until Trade Licence and Broker Card are uploaded and verified by admin."}
+              </p>
+            </div>
+          </div>
+          <Link to="/dashboard/settings" className="shrink-0">
+            <Button size="sm" className="bg-slate-900 text-white hover:bg-slate-800 text-xs">
+              {user?.status === "pending_approval" ? "View Credentials" : "Upload Documents"}
+            </Button>
+          </Link>
+        </div>
+      )}
+
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
         {cards.map((c) => (
           <div key={c.label} className="bg-white rounded-xl border border-slate-200 p-5" data-testid={`stat-${c.label.toLowerCase().replace(/\s+/g, "-")}`}>

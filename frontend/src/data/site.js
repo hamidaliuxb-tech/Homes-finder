@@ -4,15 +4,32 @@ export const EMIRATES = [
 
 export const COMMUNITIES = {
   Dubai: [
-    "Downtown Dubai", "Dubai Marina", "Business Bay", "Jumeirah", "Palm Jumeirah",
-    "Arabian Ranches", "Dubai Hills", "JVC", "Jumeirah Lake Towers", "Dubai Creek Harbour",
+    "Downtown Dubai", "Dubai Marina", "Business Bay", "Palm Jumeirah", "Dubai Hills Estate",
+    "Jumeirah Village Circle (JVC)", "Jumeirah Lakes Towers (JLT)", "Jumeirah Beach Residence (JBR)",
+    "Arabian Ranches", "Dubai Creek Harbour", "Meydan", "MBR City", "Dubai South",
+    "Al Furjan", "Bluewaters Island", "DIFC", "City Walk", "Damac Hills", "Damac Hills 2",
+    "Dubai Silicon Oasis", "Dubai Sports City", "Motor City", "Arjan", "Town Square",
+    "Tilal Al Ghaf", "Villanova", "The Greens", "The Views", "Emirates Hills", "Jumeirah Golf Estates"
   ],
-  "Abu Dhabi": ["Yas Island", "Saadiyat Island", "Al Reem Island", "Al Raha Beach"],
-  Sharjah: ["Al Majaz", "Aljada", "Tilal City"],
-  Ajman: ["Al Nuaimiya", "Emirates City"],
-  "Ras Al Khaimah": ["Al Hamra Village", "Al Marjan Island"],
-  Fujairah: ["Al Faseel", "Dibba"],
-  "Umm Al Quwain": ["Al Salamah"],
+  "Abu Dhabi": [
+    "Yas Island", "Saadiyat Island", "Al Reem Island", "Al Raha Beach", "Al Maryah Island",
+    "Corniche", "Khalifa City", "Al Reef", "Al Bateen", "Masdar City"
+  ],
+  Sharjah: [
+    "Al Majaz", "Aljada", "Tilal City", "Al Mamsha", "Al Khan", "Al Nahda", "Muwaileh", "Sharjah Waterfront City"
+  ],
+  Ajman: [
+    "Al Nuaimiya", "Emirates City", "Al Rashidiya", "Al Jurf", "Ajman Downtown", "Al Rawda"
+  ],
+  "Ras Al Khaimah": [
+    "Al Hamra Village", "Al Marjan Island", "Mina Al Arab", "Dahan", "Khuzam"
+  ],
+  Fujairah: [
+    "Al Faseel", "Dibba", "Al Gurfa", "Mirbah"
+  ],
+  "Umm Al Quwain": [
+    "Al Salamah", "Umm Al Quwain Marina", "Al Raudah", "Al Hawah"
+  ],
 };
 
 export const PROPERTY_TYPES = [

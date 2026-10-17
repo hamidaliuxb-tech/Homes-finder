@@ -40,6 +40,7 @@ export default function SettingsTab() {
     if (settings) {
       const copy = JSON.parse(JSON.stringify(settings));
       if (!copy.options) copy.options = {};
+      if (!copy.options.emirates) copy.options.emirates = [];
       if (!copy.options.developers) copy.options.developers = [];
       if (!copy.options.property_types) copy.options.property_types = [];
       if (!copy.options.communities) copy.options.communities = {};
@@ -182,11 +183,12 @@ export default function SettingsTab() {
             <div className="flex items-center justify-between flex-wrap gap-3 pb-4 border-b border-slate-100">
               <div>
                 <h3 className="font-serif text-lg font-bold text-slate-900">Dropdown Options Manager</h3>
-                <p className="text-xs text-slate-500">Edit or add options for developers, communities, property types and amenities used in property listings.</p>
+                <p className="text-xs text-slate-500">Edit or add options for Emirates, developers, communities, property types and amenities used across the platform.</p>
               </div>
               {/* Category selector */}
               <div className="flex gap-1.5 flex-wrap">
                 {[
+                  ["emirates", "Emirates"],
                   ["developers", "Developers"],
                   ["communities", "Communities"],
                   ["property_types", "Property Types"],
@@ -215,7 +217,9 @@ export default function SettingsTab() {
                   <Select value={selectedEmirate} onValueChange={setSelectedEmirate}>
                     <SelectTrigger className="h-9"><SelectValue /></SelectTrigger>
                     <SelectContent>
-                      {EMIRATES.map((e) => <SelectItem key={e} value={e}>{e}</SelectItem>)}
+                      {((form.options?.emirates && form.options.emirates.length > 0) ? form.options.emirates : EMIRATES).map((e) => (
+                        <SelectItem key={e} value={e}>{e}</SelectItem>
+                      ))}
                     </SelectContent>
                   </Select>
                 </div>

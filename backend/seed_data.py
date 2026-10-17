@@ -281,18 +281,38 @@ DEFAULT_PROPERTY_TYPES = [
     "Office", "Retail", "Warehouse", "Land", "Commercial Building", "Other"
 ]
 
+DEFAULT_EMIRATES = [
+    "Dubai", "Abu Dhabi", "Sharjah", "Ajman", "Ras Al Khaimah", "Fujairah", "Umm Al Quwain"
+]
+
 DEFAULT_COMMUNITIES = {
     "Dubai": [
-        "Downtown Dubai", "Dubai Marina", "Business Bay", "Jumeirah", "Palm Jumeirah",
-        "Arabian Ranches", "Dubai Hills", "JVC", "Jumeirah Lake Towers", "Dubai Creek Harbour",
-        "Meydan", "MBR City", "Dubai South", "Al Furjan", "Bluewaters Island"
+        "Downtown Dubai", "Dubai Marina", "Business Bay", "Palm Jumeirah", "Dubai Hills Estate",
+        "Jumeirah Village Circle (JVC)", "Jumeirah Lakes Towers (JLT)", "Jumeirah Beach Residence (JBR)",
+        "Arabian Ranches", "Dubai Creek Harbour", "Meydan", "MBR City", "Dubai South",
+        "Al Furjan", "Bluewaters Island", "DIFC", "City Walk", "Damac Hills", "Damac Hills 2",
+        "Dubai Silicon Oasis", "Dubai Sports City", "Motor City", "Arjan", "Town Square",
+        "Tilal Al Ghaf", "Villanova", "The Greens", "The Views", "Emirates Hills", "Jumeirah Golf Estates"
     ],
-    "Abu Dhabi": ["Yas Island", "Saadiyat Island", "Al Reem Island", "Al Raha Beach", "Al Maryah Island"],
-    "Sharjah": ["Al Majaz", "Aljada", "Tilal City", "Al Mamsha"],
-    "Ajman": ["Al Nuaimiya", "Emirates City", "Al Rashidiya"],
-    "Ras Al Khaimah": ["Al Hamra Village", "Al Marjan Island", "Mina Al Arab"],
-    "Fujairah": ["Al Faseel", "Dibba"],
-    "Umm Al Quwain": ["Al Salamah", "Umm Al Quwain Marina"],
+    "Abu Dhabi": [
+        "Yas Island", "Saadiyat Island", "Al Reem Island", "Al Raha Beach", "Al Maryah Island",
+        "Corniche", "Khalifa City", "Al Reef", "Al Bateen", "Masdar City"
+    ],
+    "Sharjah": [
+        "Al Majaz", "Aljada", "Tilal City", "Al Mamsha", "Al Khan", "Al Nahda", "Muwaileh", "Sharjah Waterfront City"
+    ],
+    "Ajman": [
+        "Al Nuaimiya", "Emirates City", "Al Rashidiya", "Al Jurf", "Ajman Downtown", "Al Rawda"
+    ],
+    "Ras Al Khaimah": [
+        "Al Hamra Village", "Al Marjan Island", "Mina Al Arab", "Dahan", "Khuzam"
+    ],
+    "Fujairah": [
+        "Al Faseel", "Dibba", "Al Gurfa", "Mirbah"
+    ],
+    "Umm Al Quwain": [
+        "Al Salamah", "Umm Al Quwain Marina", "Al Raudah", "Al Hawah"
+    ],
 }
 
 DEFAULT_AMENITIES = [
@@ -331,6 +351,7 @@ DEFAULT_SETTINGS = {
     ],
     "why_us": DEFAULT_WHY_US,
     "options": {
+        "emirates": DEFAULT_EMIRATES,
         "developers": DEFAULT_DEVELOPERS,
         "property_types": DEFAULT_PROPERTY_TYPES,
         "communities": DEFAULT_COMMUNITIES,

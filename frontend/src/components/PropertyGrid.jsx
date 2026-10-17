@@ -8,9 +8,10 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { api } from "@/lib/apiClient";
 import { getCachedProperties, setCachedProperties, fetchWithRetry } from "@/lib/cache";
-import { EMIRATES, COMMUNITIES, PROPERTY_TYPES, BEDROOM_OPTIONS } from "@/data/site";
+import { EMIRATES, PROPERTY_TYPES, BEDROOM_OPTIONS } from "@/data/site";
+import CommunitySearchCombobox from "@/components/CommunitySearchCombobox";
 
-function filterCached(all, fixed, { emirate, community, ptype, beds, maxPrice, status, sort }) {
+function filterCached(all, fixed, { emirate, community, ptype, beds, maxPrice, status, ownershipType, sort }) {
   let list = (all || []).filter((p) => p.published !== false);
   if (fixed?.purpose) list = list.filter((p) => p.purpose === fixed.purpose);
   if (fixed?.status) list = list.filter((p) => p.status === fixed.status);
@@ -20,6 +21,9 @@ function filterCached(all, fixed, { emirate, community, ptype, beds, maxPrice, s
   if (emirate && emirate !== "all") list = list.filter((p) => (p.emirate || "").toLowerCase() === emirate.toLowerCase());
   if (community && community !== "all") list = list.filter((p) => (p.community || "").toLowerCase() === community.toLowerCase());
   if (ptype && ptype !== "all") list = list.filter((p) => (p.property_type || "").toLowerCase() === ptype.toLowerCase());
+  if (ownershipType && ownershipType !== "all") {
+    list = list.filter((p) => (p.ownership_type || "Freehold").toLowerCase() === ownershipType.toLowerCase());
+  }
   if (beds && beds !== "all") {
     const b = Number(beds);
     if (!isNaN(b)) list = list.filter((p) => p.bedrooms === b);
@@ -42,6 +46,7 @@ export default function PropertyGrid({ fixed = {}, title }) {
   const [emirate, setEmirate] = useState(searchParams.get("emirate") || "all");
   const [community, setCommunity] = useState(searchParams.get("community") || "all");
   const [ptype, setPtype] = useState(searchParams.get("property_type") || "all");
+  const [ownershipType, setOwnershipType] = useState(searchParams.get("ownership_type") || "all");
   const [beds, setBeds] = useState(searchParams.get("bedrooms") || "all");
   const [maxPrice, setMaxPrice] = useState(searchParams.get("max_price") || "");
   const [status, setStatus] = useState(searchParams.get("status") || "all");
@@ -54,6 +59,7 @@ export default function PropertyGrid({ fixed = {}, title }) {
       emirate: searchParams.get("emirate") || "all",
       community: searchParams.get("community") || "all",
       ptype: searchParams.get("property_type") || "all",
+      ownershipType: searchParams.get("ownership_type") || "all",
       beds: searchParams.get("bedrooms") || "all",
       maxPrice: searchParams.get("max_price") || "",
       status: searchParams.get("status") || "all",
@@ -69,6 +75,7 @@ export default function PropertyGrid({ fixed = {}, title }) {
       if (emirate !== "all") params.emirate = emirate;
       if (community !== "all") params.community = community;
       if (ptype !== "all") params.property_type = ptype;
+      if (ownershipType !== "all") params.ownership_type = ownershipType;
       if (beds !== "all") params.bedrooms = beds;
       if (maxPrice) params.max_price = maxPrice;
       if (status !== "all") params.status = status;
@@ -77,7 +84,7 @@ export default function PropertyGrid({ fixed = {}, title }) {
       if (res && res.data) {
         setItems(res.data);
         // If we fetched an unfiltered listing, also cache properties
-        if (Object.keys(fixed).length === 0 && emirate === "all" && community === "all" && ptype === "all") {
+        if (Object.keys(fixed).length === 0 && emirate === "all" && community === "all" && ptype === "all" && ownershipType === "all") {
           setCachedProperties(res.data);
         }
       }
@@ -87,14 +94,18 @@ export default function PropertyGrid({ fixed = {}, title }) {
       setLoading(false);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [emirate, community, ptype, beds, maxPrice, status, sort, JSON.stringify(fixed)]);
+  }, [emirate, community, ptype, ownershipType, beds, maxPrice, status, sort, JSON.stringify(fixed)]);
 
   useEffect(() => { load(); }, [load]);
 
-  const communities = emirate !== "all" ? (COMMUNITIES[emirate] || []) : [];
-
   const reset = () => {
-    setEmirate("all"); setCommunity("all"); setPtype("all"); setBeds("all"); setMaxPrice(""); setStatus("all");
+    setEmirate("all");
+    setCommunity("all");
+    setPtype("all");
+    setOwnershipType("all");
+    setBeds("all");
+    setMaxPrice("");
+    setStatus("all");
     setSearchParams({});
   };
 
@@ -105,7 +116,9 @@ export default function PropertyGrid({ fixed = {}, title }) {
           <Button variant="outline" onClick={() => setShowFilters(!showFilters)} className="lg:hidden" data-testid="toggle-filters-btn">
             <SlidersHorizontal className="h-4 w-4 mr-2" /> Filters
           </Button>
-          <span className="text-sm text-slate-500" data-testid="results-count">{loading ? "Loading..." : `${items.length} propert${items.length === 1 ? "y" : "ies"}`}</span>
+          <span className="text-sm text-slate-500" data-testid="results-count">
+            {loading ? "Loading..." : `${items.length} propert${items.length === 1 ? "y" : "ies"}`}
+          </span>
         </div>
         <Select value={sort} onValueChange={setSort}>
           <SelectTrigger className="w-[200px] h-11" data-testid="sort-select"><SelectValue /></SelectTrigger>
@@ -132,16 +145,30 @@ export default function PropertyGrid({ fixed = {}, title }) {
                 </SelectContent>
               </Select>
             </div>
+
             <div>
               <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Community</label>
-              <Select value={community} onValueChange={setCommunity} disabled={communities.length === 0}>
-                <SelectTrigger className="mt-1.5 h-11" data-testid="filter-community"><SelectValue placeholder="All" /></SelectTrigger>
+              <CommunitySearchCombobox
+                value={community}
+                onChange={setCommunity}
+                emirate={emirate}
+                placeholder="Search community..."
+                triggerClassName="mt-1.5 h-11"
+              />
+            </div>
+
+            <div>
+              <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Ownership Type</label>
+              <Select value={ownershipType} onValueChange={setOwnershipType}>
+                <SelectTrigger className="mt-1.5 h-11" data-testid="filter-ownership"><SelectValue /></SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all">All Communities</SelectItem>
-                  {communities.map((c) => <SelectItem key={c} value={c}>{c}</SelectItem>)}
+                  <SelectItem value="all">All Ownership Types</SelectItem>
+                  <SelectItem value="Freehold">Freehold</SelectItem>
+                  <SelectItem value="Leasehold">Leasehold</SelectItem>
                 </SelectContent>
               </Select>
             </div>
+
             <div>
               <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Property Type</label>
               <Select value={ptype} onValueChange={setPtype}>
@@ -152,6 +179,7 @@ export default function PropertyGrid({ fixed = {}, title }) {
                 </SelectContent>
               </Select>
             </div>
+
             <div>
               <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Bedrooms (min)</label>
               <Select value={beds} onValueChange={setBeds}>
@@ -162,10 +190,12 @@ export default function PropertyGrid({ fixed = {}, title }) {
                 </SelectContent>
               </Select>
             </div>
+
             <div>
               <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Max Price (AED)</label>
               <Input value={maxPrice} onChange={(e) => setMaxPrice(e.target.value.replace(/[^0-9]/g, ""))} placeholder="Any" className="mt-1.5 h-11" data-testid="filter-maxprice" />
             </div>
+
             {!fixed.status && (
               <div>
                 <label className="text-xs font-medium text-slate-500 uppercase tracking-wide">Status</label>
@@ -179,6 +209,7 @@ export default function PropertyGrid({ fixed = {}, title }) {
                 </Select>
               </div>
             )}
+
             <Button variant="outline" onClick={reset} className="w-full" data-testid="filter-reset-btn">Reset Filters</Button>
           </div>
         </aside>

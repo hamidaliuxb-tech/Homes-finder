@@ -19,7 +19,7 @@ logger = logging.getLogger(__name__)
 
 EMIRATE_CODES = {"Dubai": "DXB", "Abu Dhabi": "AUH", "Sharjah": "SHJ", "Ajman": "AJM",
                  "Ras Al Khaimah": "RAK", "Fujairah": "FUJ", "Umm Al Quwain": "UAQ"}
-DOC_TYPES = {"pdf": "application/pdf", "jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png",
+DOC_TYPES = {"pdf": "application/pdf", "jpg": "image/jpeg", "jpeg": "image/jpeg", "png": "image/png", "webp": "image/webp",
              "doc": "application/msword", "docx": "application/vnd.openxmlformats-officedocument.wordprocessingml.document"}
 PUBLIC_STATUSES_HIDDEN = ["draft", "pending", "changes_required", "rejected", "unpublished"]
 
@@ -76,6 +76,13 @@ class ReasonReq(BaseModel):
     reason: str
 
 
+class AgentDocumentsReq(BaseModel):
+    trade_licence: Optional[str] = ""
+    broker_card: Optional[str] = ""
+    trade_licence_number: Optional[str] = ""
+    broker_number: Optional[str] = ""
+
+
 def strong_password(pw: str) -> bool:
     return bool(pw) and len(pw) >= 8 and re.search(r"[A-Za-z]", pw) and re.search(r"\d", pw)
 
@@ -124,11 +131,16 @@ def init_features(router, ctx):
         return f"HF-{code}-{seq:06d}"
 
     def public_user(u):
-        return {"id": u["id"], "name": u.get("name"), "email": u["email"], "role": u.get("role", "customer"),
-                "email_verified": u.get("email_verified", False), "mobile": u.get("mobile", ""),
-                "country": u.get("country", ""), "emirate": u.get("emirate", ""), "location": u.get("location", ""),
-                "company": u.get("company", ""), "user_type": u.get("user_type", ""),
-                "preferred_contact": u.get("preferred_contact", ""), "status": u.get("status", "active")}
+        return {
+            "id": u["id"], "name": u.get("name"), "email": u["email"], "role": u.get("role", "customer"),
+            "email_verified": u.get("email_verified", False), "mobile": u.get("mobile", ""),
+            "country": u.get("country", ""), "emirate": u.get("emirate", ""), "location": u.get("location", ""),
+            "company": u.get("company", ""), "user_type": u.get("user_type", ""),
+            "preferred_contact": u.get("preferred_contact", ""), "status": u.get("status", "active"),
+            "agent_verified": u.get("agent_verified", False),
+            "agent_documents": u.get("agent_documents", {}),
+            "rejection_reason": u.get("rejection_reason", ""),
+        }
 
     def clean(doc):
         return {k: v for k, v in doc.items() if k not in ("_id", "documents")}
@@ -158,17 +170,24 @@ def init_features(router, ctx):
         uid = str(uuid.uuid4())
         vtoken = secrets.token_urlsafe(32)
         pwd_hash = hash_password(body.password)
+        is_agent = (body.user_type or "").strip() == "Agent / Broker"
+        initial_status = "pending_approval" if is_agent else "active"
         user_doc = {
             "id": uid, "user_id": uid, "email": email, "password_hash": pwd_hash,
             "name": body.name.strip(), "mobile": body.mobile.strip(), "country": body.country,
             "emirate": body.emirate, "location": body.location, "company": body.company,
             "user_type": body.user_type, "preferred_contact": body.preferred_contact,
-            "role": "customer", "status": "active", "email_verified": False,
+            "role": "customer", "status": initial_status, "email_verified": False,
+            "agent_verified": False if is_agent else True,
+            "agent_documents": {"trade_licence": "", "broker_card": "", "trade_licence_number": "", "broker_number": ""},
             "verify_token": vtoken, "reg_ip": ip, "created_at": now_iso(),
         }
         await db.users.insert_one(user_doc)
         await log(uid, "register")
-        await notify(uid, "welcome", "Welcome to Homes Finder! Your account has been created.")
+        if is_agent:
+            await notify(uid, "verification_required", "Welcome! As a registered Agent/Broker, please upload your mandatory Trade Licence and Broker Card in your profile. Once approved by Homes Finder, your account will be enabled to list properties.")
+        else:
+            await notify(uid, "welcome", "Welcome to Homes Finder! Your account has been created.")
         
         verify_url = f"{mail.PUBLIC_BASE_URL}/verify-email?token={vtoken}" if mail.PUBLIC_BASE_URL else None
         async def _send_welcome(u, vurl, em):
@@ -303,7 +322,7 @@ def init_features(router, ctx):
             raise HTTPException(403, "You do not have access to this property")
         return prop
 
-    def _build_doc(data: dict, owner_id: str):
+    def _build_doc(data: dict, owner_id: str, user: dict = None):
         std = {k: v for k, v in data.items() if k in STD_FIELDS}
         doc = Property(**std).model_dump()
         doc["owner_id"] = owner_id
@@ -311,10 +330,25 @@ def init_features(router, ctx):
         doc["is_demo"] = False
         doc["published"] = False
         for extra in ("rental_frequency", "building_name", "city", "parking_spaces", "availability_date",
+                      "ownership_type", "agency_name", "zone", "rera_number", "brn", "orn", "dld_permit_number",
+                      "agent_name", "agent_mobile", "agent_whatsapp", "agent_email", "agent_brn", "agent_photo",
+                      "landlord_name", "landlord_mobile", "landlord_email",
                       "contact_name", "contact_mobile", "contact_whatsapp", "contact_email",
                       "show_phone", "show_whatsapp", "show_email", "use_registered_contact"):
             if extra in data:
                 doc[extra] = data[extra]
+        if user:
+            is_agent = user.get("user_type") == "Agent / Broker"
+            if is_agent:
+                if not doc.get("agent_name"): doc["agent_name"] = user.get("name") or ""
+                if not doc.get("agent_mobile"): doc["agent_mobile"] = user.get("mobile") or ""
+                if not doc.get("agent_email"): doc["agent_email"] = user.get("email") or ""
+                if not doc.get("agent_whatsapp"): doc["agent_whatsapp"] = user.get("mobile") or ""
+                if not doc.get("agency_name") and user.get("company"): doc["agency_name"] = user.get("company")
+            else:
+                if not doc.get("landlord_name"): doc["landlord_name"] = user.get("name") or ""
+                if not doc.get("landlord_mobile"): doc["landlord_mobile"] = user.get("mobile") or ""
+                if not doc.get("landlord_email"): doc["landlord_email"] = user.get("email") or ""
         return doc
 
     @router.get("/my/stats")
@@ -338,9 +372,11 @@ def init_features(router, ctx):
 
     @router.post("/my/properties")
     async def create_my_property(data: dict, user=Depends(get_current_user)):
+        if user.get("user_type") == "Agent / Broker" and not user.get("agent_verified"):
+            raise HTTPException(403, "Agent account pending verification. Please upload your mandatory Trade Licence and Broker Card in your profile and await admin approval before listing properties.")
         if not (data.get("title") or "").strip():
             raise HTTPException(400, "Property title is required")
-        doc = _build_doc(data, user["id"])
+        doc = _build_doc(data, user["id"], user)
         doc["reference"] = await next_reference(doc.get("emirate", "Dubai"))
         doc["approval_status"] = "pending" if data.get("submit") else "draft"
         doc["slug"] = slugify(doc["title"]) + "-" + uuid.uuid4().hex[:6]
@@ -354,10 +390,12 @@ def init_features(router, ctx):
 
     @router.put("/my/properties/{prop_id}")
     async def update_my_property(prop_id: str, data: dict, user=Depends(get_current_user)):
+        if user.get("user_type") == "Agent / Broker" and not user.get("agent_verified"):
+            raise HTTPException(403, "Agent account pending verification. Please upload your mandatory Trade Licence and Broker Card in your profile and await admin approval before editing properties.")
         existing = await _own(prop_id, user)
         if existing.get("availability") in ("sold", "rented"):
             raise HTTPException(400, "This property can no longer be edited")
-        doc = _build_doc(data, user["id"])
+        doc = _build_doc(data, user["id"], user)
         doc["id"] = prop_id
         doc["reference"] = existing.get("reference") or await next_reference(doc.get("emirate", "Dubai"))
         doc["slug"] = existing.get("slug")
@@ -602,9 +640,106 @@ def init_features(router, ctx):
             "changes_required": await db.properties.count_documents({"approval_status": "changes_required"}),
             "live": await db.properties.count_documents({"published": True}),
             "for_sale": await db.properties.count_documents({"published": True, "purpose": "buy"}),
-            "for_rent": await db.properties.count_documents({"published": True, "purpose": "rent"}),
             "rejected": await db.properties.count_documents({"approval_status": "rejected"}),
             "new_leads": await db.leads.count_documents(date_q if since else {}),
         }
+
+    # ---------------- Agent Verification & Documents ----------------
+    @router.post("/auth/agent-documents")
+    async def submit_agent_documents(body: AgentDocumentsReq, user=Depends(get_current_user)):
+        existing = await db.users.find_one({"id": user["id"]})
+        current_docs = existing.get("agent_documents") or {}
+        if body.trade_licence:
+            current_docs["trade_licence"] = body.trade_licence
+        if body.broker_card:
+            current_docs["broker_card"] = body.broker_card
+        if body.trade_licence_number:
+            current_docs["trade_licence_number"] = body.trade_licence_number
+        if body.broker_number:
+            current_docs["broker_number"] = body.broker_number
+        current_docs["submitted_at"] = now_iso()
+        
+        await db.users.update_one(
+            {"id": user["id"]},
+            {"$set": {"agent_documents": current_docs, "status": "pending_approval", "agent_verified": False}}
+        )
+        await log(user["id"], "agent_documents_submitted")
+        await notify(user["id"], "documents_submitted", "Your agent verification documents have been received and are under review by Homes Finder administration.")
+        full = await db.users.find_one({"id": user["id"]})
+        return public_user(full)
+
+    @router.post("/auth/upload-agent-document")
+    async def upload_agent_doc(
+        file: UploadFile = File(...),
+        doc_type: str = Form("trade_licence"),
+        user=Depends(get_current_user)
+    ):
+        ext = file.filename.rsplit(".", 1)[-1].lower() if "." in file.filename else "bin"
+        if ext not in DOC_TYPES:
+            raise HTTPException(400, "Unsupported document type. Allowed formats: PDF, JPG, PNG, WEBP.")
+        data = await file.read()
+        if len(data) > 15 * 1024 * 1024:
+            raise HTTPException(400, "File too large (max 15MB)")
+        fname = f"agent_{doc_type}_{user['id'][:8]}_{uuid.uuid4().hex[:6]}.{ext}"
+        storage_service.save_object(fname, data)
+        doc_url = f"/api/documents/agent-file/{fname}"
+        
+        existing = await db.users.find_one({"id": user["id"]})
+        current_docs = existing.get("agent_documents") or {}
+        current_docs[doc_type] = doc_url
+        current_docs[f"{doc_type}_filename"] = file.filename
+        current_docs["submitted_at"] = now_iso()
+        
+        await db.users.update_one(
+            {"id": user["id"]},
+            {"$set": {"agent_documents": current_docs, "status": "pending_approval", "agent_verified": False}}
+        )
+        await log(user["id"], f"agent_doc_uploaded_{doc_type}")
+        return {"success": True, "url": doc_url, "doc_type": doc_type, "filename": file.filename}
+
+    @router.get("/documents/agent-file/{fname}")
+    async def serve_agent_doc(fname: str, user=Depends(get_current_user)):
+        path = storage_service.get_object_path(fname)
+        if not path or not os.path.exists(path):
+            raise HTTPException(404, "File not found")
+        ext = fname.rsplit(".", 1)[-1].lower() if "." in fname else "bin"
+        media_type = DOC_TYPES.get(ext, "application/octet-stream")
+        return FileResponse(path, media_type=media_type)
+
+    @router.post("/admin/agents/{user_id}/approve")
+    async def approve_agent(user_id: str, admin=Depends(require_admin)):
+        u = await db.users.find_one({"id": user_id})
+        if not u:
+            raise HTTPException(404, "User not found")
+        await db.users.update_one(
+            {"id": user_id},
+            {"$set": {"agent_verified": True, "status": "active", "approved_at": now_iso(), "approved_by": admin.get("email")}}
+        )
+        await notify(user_id, "agent_approved", "Congratulations! Your agent account and credentials have been approved by Homes Finder. You can now list properties.")
+        async def _notify_approved(user_dict):
+            try:
+                subject = "Agent Account Approved - Homes Finder UAE"
+                html = f"<div style='font-family:sans-serif;padding:24px;max-width:600px;margin:auto;'><h2>Congratulations {user_dict.get('name')}!</h2><p>Your agent/broker credentials (Trade Licence & Broker Card) have been verified and approved by Homes Finder.</p><p>You can now log in to your account and submit property listings on Homes Finder.</p></div>"
+                await mail.send_email(to=user_dict["email"], subject=subject, html=html)
+            except Exception as e:
+                logger.error(f"agent approve email: {e}")
+        try:
+            asyncio.create_task(_notify_approved(dict(u)))
+        except Exception:
+            pass
+        return {"success": True, "status": "active", "agent_verified": True}
+
+    @router.post("/admin/agents/{user_id}/reject")
+    async def reject_agent(user_id: str, body: ReasonReq, admin=Depends(require_admin)):
+        u = await db.users.find_one({"id": user_id})
+        if not u:
+            raise HTTPException(404, "User not found")
+        reason = body.reason.strip() or "Documents incomplete or invalid"
+        await db.users.update_one(
+            {"id": user_id},
+            {"$set": {"agent_verified": False, "status": "changes_required", "rejection_reason": reason}}
+        )
+        await notify(user_id, "agent_rejected", f"Action required on agent verification: {reason}")
+        return {"success": True, "status": "changes_required", "agent_verified": False}
 
     logger.info("Features (customer + admin approval) routes registered")
