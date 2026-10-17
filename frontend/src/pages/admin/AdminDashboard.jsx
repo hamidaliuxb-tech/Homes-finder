@@ -60,9 +60,15 @@ export default function AdminDashboard() {
     <div className="min-h-screen bg-[#FAFAFA]" data-testid="admin-dashboard">
       <header className="bg-slate-900 text-white sticky top-0 z-40 border-b border-amber-500/20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <Link to="/admin" className="flex items-center gap-2">
-            <img src="/homes-finder-icon.png" alt="Homes Finder" className="h-7 w-auto" />
-            <span className="font-serif text-lg font-bold">Homes Finder <span className="text-amber-400 font-normal text-sm">Admin</span></span>
+          <Link to="/admin" className="flex items-center gap-2.5 group shrink-0" data-testid="admin-logo">
+            <img src="/homes-finder-icon.png" alt="Homes Finder" className="h-8 w-auto object-contain" />
+            <div className="leading-none">
+              <div className="flex items-center gap-1.5">
+                <span className="font-serif text-lg font-bold text-white tracking-tight">Homes Finder</span>
+                <span className="px-1.5 py-0.5 text-[10px] font-bold rounded bg-amber-500 text-slate-950 uppercase tracking-wide">Admin</span>
+              </div>
+              <span className="block text-[8.5px] sm:text-[9px] font-semibold tracking-[0.14em] text-amber-400 uppercase mt-0.5">Find it · Love it · Live it</span>
+            </div>
           </Link>
           <div className="flex items-center gap-3">
             <a href="/" target="_blank" rel="noopener noreferrer" className="hidden sm:flex items-center gap-1.5 text-sm text-slate-300 hover:text-amber-400"><ExternalLink className="h-4 w-4" />View Site</a>

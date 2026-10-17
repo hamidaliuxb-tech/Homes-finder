@@ -52,9 +52,12 @@ export default function Login() {
     <div className="min-h-screen flex items-center justify-center bg-slate-950 px-4 py-10" data-testid="login-page">
       <SEO title="Sign In | Homes Finder" description="Sign in to your Homes Finder account to list and manage your properties." path="/login" />
       <div className="w-full max-w-md bg-slate-900 border border-amber-500/20 rounded-2xl p-8">
-        <Link to="/" className="flex items-center justify-center gap-2 mb-6">
-          <img src="/homes-finder-icon.png" alt="Homes Finder" className="h-9 w-auto" />
-          <span className="font-serif text-2xl font-bold text-white">Homes Finder</span>
+        <Link to="/" className="flex items-center justify-center gap-2.5 mb-6 group text-left">
+          <img src="/homes-finder-icon.png" alt="Homes Finder" className="h-8 w-auto object-contain" />
+          <div className="leading-none">
+            <span className="font-serif text-xl font-bold text-white block">Homes Finder</span>
+            <span className="block text-[8.5px] sm:text-[9px] font-semibold tracking-[0.14em] text-amber-400 uppercase mt-0.5">Find it · Love it · Live it</span>
+          </div>
         </Link>
         <h1 className="font-serif text-2xl font-bold text-white text-center">{forgot ? "Reset Your Password" : "Sign In"}</h1>
         <p className="text-slate-400 text-sm text-center mt-2 mb-6">{forgot ? "Enter your email to receive a reset link." : "Access your dashboard to list and manage properties."}</p>

@@ -29,9 +29,12 @@ export default function Dashboard() {
     <div className="min-h-screen bg-[#FAFAFA]" data-testid="customer-dashboard">
       <header className="bg-slate-900 text-white sticky top-0 z-40 border-b border-amber-500/20">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-          <Link to="/dashboard" className="flex items-center gap-2">
-            <img src="/homes-finder-icon.png" alt="Homes Finder" className="h-8 w-auto" />
-            <span className="font-serif text-lg font-bold">Homes Finder</span>
+          <Link to="/dashboard" className="flex items-center gap-2.5 group shrink-0" data-testid="dashboard-logo">
+            <img src="/homes-finder-icon.png" alt="Homes Finder" className="h-8 w-auto object-contain" />
+            <div className="leading-none">
+              <span className="font-serif text-lg font-bold text-white block">Homes Finder</span>
+              <span className="block text-[8.5px] sm:text-[9px] font-semibold tracking-[0.14em] text-amber-400 uppercase mt-0.5">Find it · Love it · Live it</span>
+            </div>
           </Link>
           <div className="flex items-center gap-3">
             <a href="/" className="hidden sm:flex items-center gap-1.5 text-sm text-slate-300 hover:text-amber-400"><ExternalLink className="h-4 w-4" />View Site</a>

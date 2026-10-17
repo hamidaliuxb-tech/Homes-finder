@@ -53,9 +53,12 @@ export default function Register() {
     <div className="min-h-screen bg-slate-950 px-4 py-10" data-testid="register-page">
       <SEO title="Create Your HomesFinder Account | Register" description="Register with HomesFinder to list, manage and track your properties across the UAE." path="/register" />
       <div className="w-full max-w-2xl mx-auto bg-slate-900 border border-amber-500/20 rounded-2xl p-6 sm:p-8">
-        <Link to="/" className="flex items-center justify-center gap-2 mb-5">
-          <img src="/homes-finder-icon.png" alt="Homes Finder" className="h-9 w-auto" />
-          <span className="font-serif text-2xl font-bold text-white">Homes Finder</span>
+        <Link to="/" className="flex items-center justify-center gap-2.5 mb-5 group text-left">
+          <img src="/homes-finder-icon.png" alt="Homes Finder" className="h-8 w-auto object-contain" />
+          <div className="leading-none">
+            <span className="font-serif text-xl font-bold text-white block">Homes Finder</span>
+            <span className="block text-[8.5px] sm:text-[9px] font-semibold tracking-[0.14em] text-amber-400 uppercase mt-0.5">Find it · Love it · Live it</span>
+          </div>
         </Link>
         <h1 className="font-serif text-3xl font-bold text-white text-center">Create Your HomesFinder Account</h1>
         <p className="text-slate-400 text-sm text-center mt-2 mb-6">Register with HomesFinder to list, manage and track your properties.</p>

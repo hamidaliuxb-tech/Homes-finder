@@ -37,9 +37,12 @@ export default function AdminLogin() {
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-950 px-4" data-testid="admin-login-page">
       <div className="w-full max-w-md bg-slate-900 border border-amber-500/20 rounded-2xl p-8 text-center">
-        <Link to="/" className="inline-flex items-center gap-2 mb-6">
-          <img src="/homes-finder-icon.png" alt="Homes Finder" className="h-9 w-auto" />
-          <span className="font-serif text-2xl font-bold text-white">Homes Finder</span>
+        <Link to="/" className="inline-flex items-center gap-2.5 mb-6 group text-left">
+          <img src="/homes-finder-icon.png" alt="Homes Finder" className="h-8 w-auto object-contain" />
+          <div className="leading-none">
+            <span className="font-serif text-xl font-bold text-white block">Homes Finder</span>
+            <span className="block text-[8.5px] sm:text-[9px] font-semibold tracking-[0.14em] text-amber-400 uppercase mt-0.5">Find it · Love it · Live it</span>
+          </div>
         </Link>
         <div className="w-14 h-14 rounded-2xl bg-amber-500/10 flex items-center justify-center mx-auto mb-4">
           <ShieldCheck className="h-7 w-7 text-amber-400" />
