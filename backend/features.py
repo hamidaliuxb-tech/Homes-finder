@@ -363,7 +363,7 @@ def init_features(router, ctx):
 
     @router.get("/my/properties")
     async def my_properties(user=Depends(get_current_user)):
-        items = await db.properties.find({"owner_id": user["id"]}, {"_id": 0, "documents": 0}).sort([("created_at", -1)]).to_list(500)
+        items = await db.properties.find({"owner_id": user["id"]}, {"_id": 0}).sort([("created_at", -1)]).to_list(500)
         return items
 
     @router.get("/my/properties/{prop_id}")
@@ -380,13 +380,16 @@ def init_features(router, ctx):
         doc["reference"] = await next_reference(doc.get("emirate", "Dubai"))
         doc["approval_status"] = "pending" if data.get("submit") else "draft"
         doc["slug"] = slugify(doc["title"]) + "-" + uuid.uuid4().hex[:6]
+        if "documents" in data and isinstance(data["documents"], list):
+            doc["documents"] = data["documents"]
         if doc["approval_status"] == "pending":
             doc["submitted_at"] = now_iso()
         await db.properties.insert_one(dict(doc))
         await log(user["id"], "property_create", {"reference": doc["reference"]})
         if doc["approval_status"] == "pending":
             await _after_submit(doc, user)
-        return clean(doc)
+        out = {k: v for k, v in doc.items() if k != "_id"}
+        return out
 
     @router.put("/my/properties/{prop_id}")
     async def update_my_property(prop_id: str, data: dict, user=Depends(get_current_user)):
@@ -400,7 +403,10 @@ def init_features(router, ctx):
         doc["reference"] = existing.get("reference") or await next_reference(doc.get("emirate", "Dubai"))
         doc["slug"] = existing.get("slug")
         doc["created_at"] = existing.get("created_at", now_iso())
-        doc["documents"] = existing.get("documents", [])
+        if "documents" in data and isinstance(data["documents"], list):
+            doc["documents"] = data["documents"]
+        else:
+            doc["documents"] = existing.get("documents", [])
         submit = bool(data.get("submit"))
         was_live = existing.get("approval_status") == "approved"
         if submit or was_live:
@@ -414,7 +420,8 @@ def init_features(router, ctx):
         await log(user["id"], "property_update", {"reference": doc["reference"]})
         if doc["approval_status"] == "pending":
             await _after_submit(doc, user, resubmit=was_live or existing.get("approval_status") in ("changes_required", "rejected"))
-        return clean(doc)
+        out = {k: v for k, v in doc.items() if k != "_id"}
+        return out
 
     @router.post("/my/properties/{prop_id}/submit")
     async def submit_my_property(prop_id: str, user=Depends(get_current_user)):
@@ -457,33 +464,75 @@ def init_features(router, ctx):
 
     # ---------------- Documents (private) ----------------
     @router.post("/upload-document")
-    async def upload_document(file: UploadFile = File(...), property_id: str = Form(...),
+    async def upload_document(file: UploadFile = File(...), property_id: Optional[str] = Form(None),
                               doc_type: str = Form("Supporting Document"), user=Depends(get_current_user)):
-        prop = await _own(property_id, user)
         ext = file.filename.rsplit(".", 1)[-1].lower() if "." in file.filename else "bin"
         if ext not in DOC_TYPES:
-            raise HTTPException(400, "Unsupported document type")
+            raise HTTPException(400, "Unsupported document type. Allowed: PDF, PNG, JPG, JPEG, WEBP, DOC, DOCX")
         data = await file.read()
         if len(data) > 15 * 1024 * 1024:
             raise HTTPException(400, "File too large (max 15MB)")
         fname = f"doc_{uuid.uuid4().hex}.{ext}"
         storage_service.save_object(fname, data)
         doc_id = str(uuid.uuid4())
-        entry = {"id": doc_id, "filename": fname, "original_filename": file.filename,
-                 "doc_type": doc_type, "content_type": DOC_TYPES[ext], "private": True, "created_at": now_iso()}
-        await db.properties.update_one({"id": property_id}, {"$push": {"documents": entry}})
-        return {"id": doc_id, "original_filename": file.filename, "doc_type": doc_type}
+        entry = {
+            "id": doc_id,
+            "filename": fname,
+            "original_filename": file.filename,
+            "doc_type": doc_type,
+            "content_type": DOC_TYPES[ext],
+            "size": len(data),
+            "private": True,
+            "created_at": now_iso()
+        }
+        if property_id and property_id not in ("temp", "new", "null", "undefined"):
+            await _own(property_id, user)
+            await db.properties.update_one({"id": property_id}, {"$push": {"documents": entry}})
+        else:
+            await db.property_temp_docs.insert_one({**entry, "user_id": user["id"]})
+        return entry
+
+    @router.delete("/documents/{doc_id}")
+    async def delete_document(doc_id: str, user=Depends(get_current_user)):
+        prop = await db.properties.find_one({"documents.id": doc_id})
+        if prop:
+            if user.get("role") != "admin" and prop.get("owner_id") != user["id"]:
+                raise HTTPException(403, "Access denied")
+            entry = next((d for d in prop.get("documents", []) if d["id"] == doc_id), None)
+            await db.properties.update_one({"id": prop["id"]}, {"$pull": {"documents": {"id": doc_id}}})
+            if entry and entry.get("filename"):
+                try: storage_service.delete_object(entry["filename"])
+                except Exception: pass
+            return {"success": True}
+        temp = await db.property_temp_docs.find_one({"id": doc_id})
+        if temp:
+            if user.get("role") != "admin" and temp.get("user_id") != user["id"]:
+                raise HTTPException(403, "Access denied")
+            await db.property_temp_docs.delete_one({"id": doc_id})
+            if temp.get("filename"):
+                try: storage_service.delete_object(temp["filename"])
+                except Exception: pass
+            return {"success": True}
+        return {"success": True}
 
     @router.get("/documents/{doc_id}")
     async def get_document(doc_id: str, user=Depends(get_current_user)):
         prop = await db.properties.find_one({"documents.id": doc_id}, {"_id": 0})
-        if not prop:
+        entry = None
+        if prop:
+            if user.get("role") != "admin" and prop.get("owner_id") != user["id"]:
+                raise HTTPException(403, "Access denied")
+            entry = next((d for d in prop.get("documents", []) if d["id"] == doc_id), None)
+        else:
+            temp = await db.property_temp_docs.find_one({"id": doc_id}, {"_id": 0})
+            if temp:
+                if user.get("role") != "admin" and temp.get("user_id") != user["id"]:
+                    raise HTTPException(403, "Access denied")
+                entry = temp
+        if not entry:
             raise HTTPException(404, "Document not found")
-        if user.get("role") != "admin" and prop.get("owner_id") != user["id"]:
-            raise HTTPException(403, "Access denied")
-        entry = next((d for d in prop.get("documents", []) if d["id"] == doc_id), None)
         path = storage_service.get_object_path(entry["filename"]) if entry else None
-        if not path:
+        if not path or not os.path.exists(path):
             raise HTTPException(404, "File not found")
         return FileResponse(path, media_type=entry.get("content_type"),
                             headers={"Content-Disposition": f'inline; filename="{entry.get("original_filename","document")}"'})
@@ -499,7 +548,7 @@ def init_features(router, ctx):
                 query["$or"] = [{"source": "customer"}, {"owner_id": {"$exists": True, "$ne": None}}]
             else:
                 query["source"] = source
-        items = await db.properties.find(query, {"_id": 0, "documents": 0}).sort([("submitted_at", -1), ("created_at", -1)]).to_list(1000)
+        items = await db.properties.find(query, {"_id": 0}).sort([("submitted_at", -1), ("created_at", -1)]).to_list(1000)
         owner_ids = list({p.get("owner_id") for p in items if p.get("owner_id")})
         owners = {u["id"]: u async for u in db.users.find({"id": {"$in": owner_ids}}, {"_id": 0, "password_hash": 0})}
         for p in items:

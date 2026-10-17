@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { toast } from "sonner";
-import { Check, X, MessageSquareWarning, Eye, FileText } from "lucide-react";
+import { Check, X, MessageSquareWarning, Eye, FileText, ShieldCheck, ExternalLink, QrCode, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -65,15 +65,27 @@ export default function ApprovalsTab() {
             <div key={p.id} className="bg-white rounded-xl border border-slate-200 p-4 flex gap-4 items-center flex-wrap sm:flex-nowrap" data-testid={`approval-row-${p.id}`}>
               <div className="w-24 h-20 rounded-lg overflow-hidden bg-slate-100 shrink-0">{p.images?.[0] && <img src={fileUrl(p.images[0])} alt="" className="h-full w-full object-cover" />}</div>
               <div className="flex-1 min-w-[180px]">
-                <div className="flex items-center gap-2 flex-wrap"><h3 className="font-semibold text-slate-900">{p.title}</h3><Badge variant="outline">{LABEL[p.approval_status] || p.approval_status}</Badge></div>
+                <div className="flex items-center gap-2 flex-wrap">
+                  <h3 className="font-semibold text-slate-900">{p.title}</h3>
+                  <Badge variant="outline">{LABEL[p.approval_status] || p.approval_status}</Badge>
+                  {p.documents && p.documents.length > 0 ? (
+                    <Badge variant="outline" className="text-emerald-700 bg-emerald-50 border-emerald-200 text-xs font-semibold">
+                      {p.documents.length} Doc{p.documents.length === 1 ? "" : "s"} Attached
+                    </Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-amber-700 bg-amber-50 border-amber-200 text-xs">
+                      No Docs
+                    </Badge>
+                  )}
+                </div>
                 <p className="text-xs text-slate-500 mt-0.5">{p.reference} · {p.location} · {formatAED(p.price)}</p>
                 {p.customer && <p className="text-xs text-slate-500 mt-0.5">By {p.customer.name} · {p.customer.email} · {p.customer.phone}</p>}
               </div>
               <div className="flex gap-2 flex-wrap">
-                <Button size="sm" variant="outline" onClick={() => openDetail(p.id)} data-testid={`review-${p.id}`}><Eye className="h-4 w-4 mr-1" />View</Button>
+                <Button size="sm" variant="outline" onClick={() => openDetail(p.id)} data-testid={`review-${p.id}`}><Eye className="h-4 w-4 mr-1" />Review</Button>
                 {p.approval_status !== "approved" && <Button size="sm" onClick={() => approve(p.id)} className="bg-emerald-600 text-white hover:bg-emerald-700" data-testid={`approve-${p.id}`}><Check className="h-4 w-4 mr-1" />Approve</Button>}
-                <Button size="sm" variant="outline" onClick={() => setAction({ type: "request-changes", id: p.id })} className="hover:text-orange-600"><MessageSquareWarning className="h-4 w-4" /></Button>
-                <Button size="sm" variant="outline" onClick={() => setAction({ type: "reject", id: p.id })} className="hover:text-red-600" data-testid={`reject-${p.id}`}><X className="h-4 w-4" /></Button>
+                <Button size="sm" variant="outline" onClick={() => setAction({ type: "request-changes", id: p.id })} className="hover:text-orange-600" title="Request Changes"><MessageSquareWarning className="h-4 w-4" /></Button>
+                <Button size="sm" variant="outline" onClick={() => setAction({ type: "reject", id: p.id })} className="hover:text-red-600" data-testid={`reject-${p.id}`} title="Reject"><X className="h-4 w-4" /></Button>
               </div>
             </div>
           ))}
@@ -89,24 +101,91 @@ export default function ApprovalsTab() {
               <div className="grid sm:grid-cols-2 gap-2 text-sm text-slate-700 mt-2">
                 <div><span className="text-slate-400">Reference:</span> {detail.reference}</div>
                 <div><span className="text-slate-400">Purpose:</span> {detail.purpose === "rent" ? "For Rent" : "For Sale"}</div>
+                <div><span className="text-slate-400">Ownership:</span> {detail.ownership_type || "Freehold"}</div>
                 <div><span className="text-slate-400">Type:</span> {detail.property_type}</div>
                 <div><span className="text-slate-400">Location:</span> {detail.location}</div>
                 <div><span className="text-slate-400">Price:</span> {formatAED(detail.price)}</div>
                 <div><span className="text-slate-400">Beds/Baths:</span> {detail.bedrooms}/{detail.bathrooms}</div>
                 <div><span className="text-slate-400">Area:</span> {detail.area} sq.ft.</div>
-                <div><span className="text-slate-400">Amenities:</span> {(detail.amenities || []).length}</div>
               </div>
               {detail.description && <p className="text-sm text-slate-600 mt-2">{detail.description}</p>}
               {detail.customer && <div className="rounded-lg bg-slate-50 p-3 text-sm mt-2"><strong>Customer:</strong> {detail.customer.name} · {detail.customer.email} · {detail.customer.mobile}</div>}
-              {(detail.documents || []).length > 0 && (
-                <div className="mt-2"><h4 className="font-semibold text-sm mb-1">Private Documents (admin only)</h4>
-                  {detail.documents.map((d) => <a key={d.id} href={`${API}/documents/${d.id}`} target="_blank" rel="noopener noreferrer" className="flex items-center gap-2 text-sm text-amber-700 hover:underline"><FileText className="h-4 w-4" />{d.original_filename} ({d.doc_type})</a>)}
+
+              {/* Regulatory & Permit QR Code Info */}
+              <div className="mt-3 p-3 bg-slate-50 border border-slate-200 rounded-xl">
+                <div className="text-xs font-semibold text-slate-800 uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                  <ShieldCheck className="h-4 w-4 text-amber-500" /> Regulatory &amp; Permit Details
                 </div>
-              )}
-              <DialogFooter className="gap-2">
+                <div className="grid sm:grid-cols-2 gap-2 text-xs text-slate-700">
+                  <div><span className="text-slate-400">Agency:</span> {detail.agency_name || "Homes Finder Real Estate"}</div>
+                  <div><span className="text-slate-400">Zone:</span> {detail.zone || "—"}</div>
+                  <div><span className="text-slate-400">RERA Permit:</span> {detail.rera_number || "—"}</div>
+                  <div><span className="text-slate-400">BRN / ORN:</span> {detail.brn || "—"} / {detail.orn || "32890"}</div>
+                  <div><span className="text-slate-400">DLD Permit:</span> {detail.dld_permit_number || "—"}</div>
+                </div>
+                {detail.permit_qr_code && (
+                  <div className="mt-2.5 pt-2 border-t border-slate-200 flex items-center gap-3">
+                    <img src={fileUrl(detail.permit_qr_code)} alt="Permit QR" className="h-16 w-16 object-contain border border-slate-300 rounded bg-white p-1" />
+                    <div className="text-xs">
+                      <div className="font-semibold text-slate-900 flex items-center gap-1"><QrCode className="h-3.5 w-3.5 text-amber-600" /> Official DLD Permit QR Code</div>
+                      <p className="text-slate-500 mt-0.5">Permit verification QR uploaded by agent/owner.</p>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* Uploaded Verification Documents (Title Deed, Emirates ID, Form A) */}
+              <div className="mt-3 p-4 bg-amber-50/50 border border-amber-200 rounded-xl" data-testid="admin-verification-docs">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center gap-1.5 font-semibold text-sm text-amber-950">
+                    <ShieldCheck className="h-4 w-4 text-amber-600" />
+                    Property Verification Documents (Private)
+                  </div>
+                  <Badge variant="outline" className="text-amber-800 border-amber-300 bg-amber-100 text-xs font-semibold">
+                    {detail.documents?.length || 0} Document{(detail.documents?.length === 1) ? "" : "s"}
+                  </Badge>
+                </div>
+
+                {(detail.documents || []).length > 0 ? (
+                  <div className="space-y-2 mt-2">
+                    {detail.documents.map((d) => (
+                      <div key={d.id} className="flex items-center justify-between p-2.5 bg-white border border-amber-200/80 rounded-lg shadow-2xs gap-2">
+                        <div className="flex items-center gap-2.5 min-w-0">
+                          <div className="h-8 w-8 rounded-lg bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0">
+                            <FileText className="h-4 w-4" />
+                          </div>
+                          <div className="min-w-0">
+                            <div className="text-xs font-bold text-slate-900 truncate">{d.doc_type || "Verification Document"}</div>
+                            <div className="text-[11px] text-slate-500 truncate">{d.original_filename}</div>
+                          </div>
+                        </div>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="h-8 text-xs font-semibold text-amber-800 border-amber-300 hover:bg-amber-100"
+                          onClick={() => {
+                            const token = localStorage.getItem("hf_token") || "";
+                            window.open(`${API}/documents/${d.id}?token=${token}`, "_blank");
+                          }}
+                          data-testid={`admin-view-doc-${d.id}`}
+                        >
+                          <ExternalLink className="h-3.5 w-3.5 mr-1" /> View Document
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex items-center gap-2 text-xs text-amber-800 bg-amber-100/60 p-2.5 rounded-lg border border-amber-200 mt-2">
+                    <AlertCircle className="h-4 w-4 text-amber-600 shrink-0" />
+                    <span>No verification documents uploaded yet. You may approve if verified offline or click &quot;Request Changes&quot; to ask the owner for documents.</span>
+                  </div>
+                )}
+              </div>
+
+              <DialogFooter className="gap-2 pt-2">
                 <Button variant="outline" onClick={() => setAction({ type: "request-changes", id: detail.id })}>Request Changes</Button>
                 <Button variant="outline" onClick={() => setAction({ type: "reject", id: detail.id })} className="text-red-600">Reject</Button>
-                {detail.approval_status !== "approved" && <Button onClick={() => approve(detail.id)} className="bg-emerald-600 text-white hover:bg-emerald-700" data-testid="approve-in-dialog">Approve &amp; Publish</Button>}
+                {detail.approval_status !== "approved" && <Button onClick={() => approve(detail.id)} className="bg-emerald-600 text-white hover:bg-emerald-700" data-testid="approve-in-dialog"><Check className="h-4 w-4 mr-1" />Approve &amp; Publish</Button>}
               </DialogFooter>
             </>
           )}

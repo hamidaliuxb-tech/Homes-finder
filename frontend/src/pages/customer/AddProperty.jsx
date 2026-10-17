@@ -1,8 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate, useParams, Link } from "react-router-dom";
 import { toast } from "sonner";
-import { Loader2, Send, Save, Plus, AlertCircle, ShieldCheck, QrCode, Upload, X } from "lucide-react";
+import { Loader2, Send, Save, Plus, AlertCircle, ShieldCheck, QrCode, Upload, X, FileText, Trash2, ExternalLink, FileCheck } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
@@ -10,7 +11,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import ImageUploader from "@/components/ImageUploader";
-import { api, fileUrl } from "@/lib/apiClient";
+import { api, fileUrl, API } from "@/lib/apiClient";
 import { useSettings } from "@/context/SettingsContext";
 import { useAuth } from "@/context/AuthContext";
 import { EMIRATES, COMMUNITIES, PROPERTY_TYPES } from "@/data/site";
@@ -123,11 +124,14 @@ export default function AddProperty() {
     ownership_type: "Freehold", agency_name: "", zone: "", rera_number: "", brn: "", orn: "", dld_permit_number: "", permit_qr_code: "",
     agent_name: "", agent_mobile: "", agent_whatsapp: "", agent_email: "",
     landlord_name: "", landlord_mobile: "", landlord_email: "",
-    service_charges: "", rental_yield: "", amenities: [], images: [],
+    service_charges: "", rental_yield: "", amenities: [], images: [], documents: [],
     contact_name: "", contact_mobile: "", contact_whatsapp: "", contact_email: "",
     use_registered_contact: true, show_phone: false, show_whatsapp: true, show_email: false,
   });
   const set = (k, v) => setF((p) => ({ ...p, [k]: v }));
+
+  const [selectedDocType, setSelectedDocType] = useState("Title Deed");
+  const [uploadingDoc, setUploadingDoc] = useState(false);
 
   useEffect(() => {
     if (id) {
@@ -140,6 +144,7 @@ export default function AddProperty() {
           bedrooms: String(d.bedrooms ?? ""),
           bathrooms: String(d.bathrooms ?? ""),
           area: String(d.area || ""),
+          documents: d.documents || [],
         }));
         if (d.property_type && !DEFAULT_TYPES.slice(0, -1).includes(d.property_type)) {
           set("property_type", "Other");
@@ -148,6 +153,53 @@ export default function AddProperty() {
       }).catch(() => {});
     }
   }, [id]);
+
+  const handleUploadDocument = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 15 * 1024 * 1024) {
+      toast.error("File is too large. Maximum size is 15MB.");
+      return;
+    }
+    const fd = new FormData();
+    fd.append("file", file);
+    fd.append("doc_type", selectedDocType);
+    if (id) fd.append("property_id", id);
+    else fd.append("property_id", "temp");
+
+    setUploadingDoc(true);
+    try {
+      const res = await api.post("/upload-document", fd);
+      const newEntry = res.data;
+      setF((p) => ({
+        ...p,
+        documents: [...(p.documents || []), newEntry]
+      }));
+      toast.success(`${selectedDocType} uploaded successfully!`);
+      const inputEl = document.getElementById("prop-doc-upload-input");
+      if (inputEl) inputEl.value = "";
+    } catch (err) {
+      toast.error(err.response?.data?.detail || "Failed to upload document");
+    } finally {
+      setUploadingDoc(false);
+    }
+  };
+
+  const handleDeleteDocument = async (docId) => {
+    try {
+      await api.delete(`/documents/${docId}`);
+      setF((p) => ({
+        ...p,
+        documents: (p.documents || []).filter((d) => d.id !== docId)
+      }));
+      toast.success("Document removed");
+    } catch (err) {
+      setF((p) => ({
+        ...p,
+        documents: (p.documents || []).filter((d) => d.id !== docId)
+      }));
+    }
+  };
 
   const handleAddOption = async (val) => {
     const { type } = dialogState;
@@ -536,6 +588,114 @@ export default function AddProperty() {
                 </Button>
               </div>
             </div>
+
+            {/* Property Verification Documents Section (DLD / RERA Compliance) */}
+            <div className="pt-6 border-t border-slate-200" data-testid="verification-documents-section">
+              <div className="flex items-center justify-between flex-wrap gap-2 mb-2">
+                <div>
+                  <div className="flex items-center gap-2">
+                    <ShieldCheck className="h-5 w-5 text-amber-500" />
+                    <h3 className="font-serif text-lg font-bold text-slate-900">Property Verification Documents</h3>
+                  </div>
+                  <p className="text-xs text-slate-500 mt-0.5">
+                    Upload official compliance documents (Title Deed, Emirates ID, Form A / NOC). Kept strictly private and reviewed only by Homes Finder administrators.
+                  </p>
+                </div>
+                <Badge variant="outline" className="text-amber-800 border-amber-300 bg-amber-50 text-xs font-semibold">
+                  {f.documents?.length || 0} Document{(f.documents?.length === 1) ? "" : "s"} Attached
+                </Badge>
+              </div>
+
+              {/* Upload Form Box */}
+              <div className="bg-slate-50 border border-slate-200 rounded-xl p-4 mt-3 space-y-3">
+                <div className="grid sm:grid-cols-2 gap-3">
+                  <div>
+                    <Label className="text-xs font-semibold text-slate-700">Document Type</Label>
+                    <Select value={selectedDocType} onValueChange={setSelectedDocType}>
+                      <SelectTrigger className="mt-1 h-10 bg-white" data-testid="ap-doc-type"><SelectValue /></SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="Title Deed">Title Deed / Proof of Ownership (Deed / Oqood)</SelectItem>
+                        <SelectItem value="Owner Passport / Emirates ID">Landlord / Owner Passport or Emirates ID</SelectItem>
+                        <SelectItem value="Form A / Broker Agreement">Form A / Broker Agreement / NOC</SelectItem>
+                        <SelectItem value="DEWA / Ejari Certificate">DEWA Bill / Ejari Certificate</SelectItem>
+                        <SelectItem value="Supporting Document">Power of Attorney / Other Supporting Document</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  <div>
+                    <Label className="text-xs font-semibold text-slate-700">Choose File (PDF, JPG, PNG, DOCX · Max 15MB)</Label>
+                    <div className="mt-1 flex items-center gap-2">
+                      <Input
+                        type="file"
+                        accept=".pdf,.png,.jpg,.jpeg,.webp,.doc,.docx"
+                        disabled={uploadingDoc}
+                        onChange={handleUploadDocument}
+                        className="h-10 bg-white file:text-xs file:font-semibold file:bg-amber-100 file:text-amber-900 file:border-0 file:rounded-md file:mr-2 file:px-2 file:py-1 cursor-pointer"
+                        id="prop-doc-upload-input"
+                        data-testid="ap-doc-input"
+                      />
+                      {uploadingDoc && <Loader2 className="h-5 w-5 animate-spin text-amber-600 shrink-0" />}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Uploaded Documents List */}
+                {f.documents && f.documents.length > 0 ? (
+                  <div className="mt-3 space-y-2">
+                    <Label className="text-xs font-semibold text-slate-600 uppercase tracking-wider">Uploaded Documents ({f.documents.length})</Label>
+                    <div className="grid sm:grid-cols-2 gap-2">
+                      {f.documents.map((doc) => (
+                        <div key={doc.id} className="flex items-center justify-between p-3 bg-white border border-slate-200 rounded-lg shadow-2xs gap-2" data-testid={`uploaded-doc-${doc.id}`}>
+                          <div className="flex items-center gap-2.5 min-w-0">
+                            <div className="h-9 w-9 rounded-lg bg-amber-500/10 text-amber-600 flex items-center justify-center shrink-0">
+                              <FileText className="h-5 w-5" />
+                            </div>
+                            <div className="min-w-0">
+                              <div className="text-xs font-bold text-slate-800 truncate">{doc.doc_type || "Verification Document"}</div>
+                              <div className="text-[11px] text-slate-500 truncate">{doc.original_filename}</div>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-1 shrink-0">
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="ghost"
+                              className="h-8 px-2 text-xs text-amber-700 hover:text-amber-800 hover:bg-amber-50"
+                              onClick={() => {
+                                const token = localStorage.getItem("hf_token") || "";
+                                window.open(`${API}/documents/${doc.id}?token=${token}`, "_blank");
+                              }}
+                              title="Preview Document"
+                              data-testid={`view-doc-${doc.id}`}
+                            >
+                              <ExternalLink className="h-3.5 w-3.5 mr-1" /> View
+                            </Button>
+                            <Button
+                              type="button"
+                              size="sm"
+                              variant="ghost"
+                              className="h-8 px-2 text-xs text-red-600 hover:text-red-700 hover:bg-red-50"
+                              onClick={() => handleDeleteDocument(doc.id)}
+                              title="Delete Document"
+                              data-testid={`del-doc-${doc.id}`}
+                            >
+                              <Trash2 className="h-3.5 w-3.5" />
+                            </Button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                ) : (
+                  <div className="mt-2 p-3 bg-amber-50/60 border border-amber-200 rounded-lg text-xs text-amber-900 flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4 text-amber-600 shrink-0" />
+                    <span>
+                      Uploading your <strong>Title Deed</strong> and <strong>Owner Passport / Emirates ID</strong> is strongly recommended for fast compliance approval by the Homes Finder administrative team.
+                    </span>
+                  </div>
+                )}
+              </div>
+            </div>
           </>
         )}
 
@@ -568,6 +728,16 @@ export default function AddProperty() {
                 <div><span className="text-slate-400">Beds/Baths:</span> {f.bedrooms || 0}/{f.bathrooms || 0}</div>
                 <div><span className="text-slate-400">Photos:</span> {f.images.length}</div>
                 <div><span className="text-slate-400">Amenities:</span> {f.amenities.length}</div>
+                <div className="sm:col-span-2 pt-1 border-t border-slate-200 flex items-center justify-between">
+                  <span className="text-slate-400">Verification Documents:</span>
+                  {f.documents && f.documents.length > 0 ? (
+                    <span className="font-semibold text-emerald-700 flex items-center gap-1">
+                      <FileCheck className="h-4 w-4" /> {f.documents.length} document{f.documents.length === 1 ? "" : "s"} attached ({f.documents.map((d) => d.doc_type).join(", ")})
+                    </span>
+                  ) : (
+                    <span className="text-amber-700 text-xs">No documents attached (Optional, but recommended)</span>
+                  )}
+                </div>
               </div>
               <p className="mt-3 text-xs text-amber-700">On submission your property will be <strong>Pending Approval</strong> and will not appear publicly until the Homes Finder team approves it.</p>
             </div>

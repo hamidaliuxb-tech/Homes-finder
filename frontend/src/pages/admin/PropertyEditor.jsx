@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from "react";
 import { toast } from "sonner";
-import { Building2, UserCheck, ShieldCheck, QrCode, Upload, X } from "lucide-react";
+import { Building2, UserCheck, ShieldCheck, QrCode, Upload, X, FileText, ExternalLink } from "lucide-react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import ImageUploader from "@/components/ImageUploader";
-import { api, fileUrl } from "@/lib/apiClient";
+import { api, fileUrl, API } from "@/lib/apiClient";
 import { useSettings } from "@/context/SettingsContext";
 import { EMIRATES, COMMUNITIES, PROPERTY_TYPES } from "@/data/site";
 
@@ -251,6 +252,43 @@ export default function PropertyEditor({ open, onClose, property, onSaved }) {
             <div><Label>Investment Highlights (one per line)</Label><Textarea value={fromList(form.investment_highlights)} onChange={(e) => set("investment_highlights", toList(e.target.value))} className="mt-1.5" data-testid="pf-highlights" /></div>
             <div><Label>Location Advantages (one per line)</Label><Textarea value={fromList(form.location_advantages)} onChange={(e) => set("location_advantages", toList(e.target.value))} className="mt-1.5" data-testid="pf-advantages" /></div>
           </div>
+
+          {/* Verification Documents display */}
+          {form.documents && form.documents.length > 0 && (
+            <div className="p-3 bg-slate-50 border border-slate-200 rounded-xl space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 font-semibold text-xs text-slate-800 uppercase tracking-wider">
+                  <ShieldCheck className="h-4 w-4 text-amber-500" /> Attached Verification Documents ({form.documents.length})
+                </div>
+                <span className="text-[11px] text-slate-400">Strictly confidential</span>
+              </div>
+              <div className="grid sm:grid-cols-2 gap-2">
+                {form.documents.map((d) => (
+                  <div key={d.id} className="flex items-center justify-between p-2.5 bg-white border border-slate-200 rounded-lg shadow-2xs gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <FileText className="h-4 w-4 text-amber-600 shrink-0" />
+                      <div className="min-w-0">
+                        <div className="text-xs font-semibold text-slate-900 truncate">{d.doc_type || "Document"}</div>
+                        <div className="text-[11px] text-slate-500 truncate">{d.original_filename}</div>
+                      </div>
+                    </div>
+                    <Button
+                      type="button"
+                      size="sm"
+                      variant="ghost"
+                      className="h-7 px-2 text-xs text-amber-700 hover:text-amber-800 hover:bg-amber-50"
+                      onClick={() => {
+                        const token = localStorage.getItem("hf_token") || "";
+                        window.open(`${API}/documents/${d.id}?token=${token}`, "_blank");
+                      }}
+                    >
+                      <ExternalLink className="h-3.5 w-3.5 mr-1" /> View
+                    </Button>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div>
             <Label>Property Images</Label>

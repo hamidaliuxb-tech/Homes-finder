@@ -170,6 +170,7 @@ class Property(BaseModel):
     show_whatsapp: bool = True
     show_email: bool = False
     use_registered_contact: bool = True
+    documents: List[dict] = []
     created_at: str = Field(default_factory=now_iso)
 
 
@@ -201,6 +202,8 @@ async def get_current_user(request: Request, authorization: Optional[str] = Head
             token = auth_hdr.split(" ", 1)[1].strip()
         elif auth_hdr:
             token = auth_hdr.strip()
+    if not token:
+        token = request.query_params.get("token")
     if not token:
         raise HTTPException(status_code=401, detail="Not authenticated")
     try:
