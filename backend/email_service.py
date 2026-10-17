@@ -54,6 +54,8 @@ class _EmailScan(HTMLParser):
 def _host_ok(host: str) -> bool:
     if not host or "xn--" in host:
         return False
+    if host in ("localhost", "127.0.0.1"):
+        return True
     try:
         ipaddress.ip_address(host)
         return False
@@ -75,7 +77,7 @@ def _assert_safe_email(subject: str, html: str) -> None:
         low = url.strip().lower()
         if low.startswith(("mailto:", "tel:", "cid:", "#")):
             continue
-        if not low.startswith("https://"):
+        if not (low.startswith("https://") or low.startswith("http://localhost") or low.startswith("http://127.0.0.1")):
             raise ValueError(f"Email links/assets must be absolute https: {url!r}")
         host = urlparse(low).hostname or ""
         if not _host_ok(host):
@@ -129,7 +131,16 @@ async def send_email(*, to: str, subject: str, html: str, reply_to: str | None =
     except Exception as e:
         logger.warning(f"Email safety check note: {e}")
 
-    # 1. Primary: Resend HTTPS API (Port 443 - works on Render without port blocking)
+    # 1. Primary: Hostinger Authenticated SMTP (enquiries@homesfinder.ae)
+    if SMTP_HOST and SMTP_FROM:
+        try:
+            await asyncio.to_thread(_send_sync, to, subject, html, reply_to)
+            logger.info(f"Email sent via Hostinger SMTP to {to} ('{subject}')")
+            return True
+        except Exception as e:
+            logger.warning(f"SMTP send failed for {to}, trying fallback: {e}")
+
+    # 2. Fallback: Resend HTTPS API (Port 443)
     if RESEND_API_KEY:
         try:
             async with httpx.AsyncClient(timeout=8.0) as client:
@@ -158,15 +169,6 @@ async def send_email(*, to: str, subject: str, html: str, reply_to: str | None =
                     logger.warning(f"Resend API response {res.status_code}: {res.text}")
         except Exception as resend_err:
             logger.warning(f"Resend send failed for {to}: {resend_err}")
-
-    # 2. Direct SMTP
-    if SMTP_HOST and SMTP_FROM:
-        try:
-            await asyncio.to_thread(_send_sync, to, subject, html, reply_to)
-            logger.info(f"Email sent via SMTP to {to} ('{subject}')")
-            return True
-        except Exception as e:
-            logger.error(f"SMTP send failed for {to}: {e}")
 
     return False
 

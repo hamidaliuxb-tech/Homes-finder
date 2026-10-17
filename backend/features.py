@@ -6,6 +6,7 @@ import secrets
 import logging
 from datetime import datetime, timezone, timedelta
 
+from urllib.parse import urlparse
 import httpx
 from fastapi import HTTPException, Depends, Request, Response, UploadFile, File, Form, BackgroundTasks
 from fastapi.responses import FileResponse
@@ -230,7 +231,7 @@ def init_features(router, ctx):
         return {"success": True}
 
     @router.post("/auth/forgot-password")
-    async def forgot_password(body: ForgotReq, background_tasks: BackgroundTasks):
+    async def forgot_password(body: ForgotReq, request: Request, background_tasks: BackgroundTasks):
         email = (body.email or "").strip().lower()
         if not email:
             return {"success": True, "message": "If an account exists, a reset link has been sent."}
@@ -254,30 +255,65 @@ def init_features(router, ctx):
 
         if user:
             token = secrets.token_urlsafe(32)
+            # Invalidate older unused reset tokens
+            await db.password_reset_tokens.update_many(
+                {"user_id": user["id"], "used": False},
+                {"$set": {"used": True, "invalidated": True}}
+            )
             await db.password_reset_tokens.insert_one({
                 "token": token,
                 "user_id": user["id"],
+                "email": email,
                 "used": False,
                 "expires_at": (datetime.now(timezone.utc) + timedelta(hours=2)).isoformat(),
                 "created_at": now_iso()
             })
-            base_url = (mail.PUBLIC_BASE_URL or "https://www.homesfinder.ae").rstrip("/")
+
+            # Detect origin dynamically
+            origin = request.headers.get("origin") or ""
+            if not origin:
+                referer = request.headers.get("referer") or ""
+                if referer:
+                    try:
+                        p = urlparse(referer)
+                        origin = f"{p.scheme}://{p.netloc}"
+                    except Exception:
+                        pass
+            base_url = (origin or mail.PUBLIC_BASE_URL or "https://www.homesfinder.ae").rstrip("/")
             reset_url = f"{base_url}/reset-password?token={token}"
 
-            async def _send_forgot_bg(u_dict, r_url, to_addr):
+            subject, html = mail.build_password_reset_email(dict(user), reset_url)
+            
+            async def _send_forgot_bg(u_dict, r_url, to_addr, subj, htm):
                 try:
-                    subject, html = mail.build_password_reset_email(u_dict, r_url)
-                    sent = await mail.send_email(to=to_addr, subject=subject, html=html)
+                    sent = await mail.send_email(to=to_addr, subject=subj, html=htm)
                     logger.info(f"Password reset link sent to {to_addr} (success={sent}): {r_url}")
                 except Exception as e:
                     logger.error(f"Forgot password email failed for {to_addr}: {e}")
 
             try:
-                asyncio.create_task(_send_forgot_bg(dict(user), reset_url, email))
-            except Exception:
-                background_tasks.add_task(_send_forgot_bg, dict(user), reset_url, email)
+                # Send directly with 6s timeout so caller gets immediate delivery
+                sent = await asyncio.wait_for(mail.send_email(to=email, subject=subject, html=html), timeout=6.0)
+                logger.info(f"Password reset link delivered to {email} (success={sent}): {reset_url}")
+            except Exception as e:
+                logger.warning(f"Direct forgot password dispatch failed, queuing to background: {e}")
+                background_tasks.add_task(_send_forgot_bg, dict(user), reset_url, email, subject, html)
 
-        return {"success": True, "message": "If an account exists, a reset link has been sent."}
+        return {"success": True, "message": "If an account exists, a reset link has been sent to your email."}
+
+    @router.get("/auth/verify-reset-token")
+    async def verify_reset_token(token: str):
+        if not token:
+            raise HTTPException(400, "Reset token is required")
+        rec = await db.password_reset_tokens.find_one({"token": token})
+        if not rec or rec.get("used"):
+            raise HTTPException(400, "This password reset link is invalid or has already been used.")
+        exp = datetime.fromisoformat(rec["expires_at"])
+        if exp.tzinfo is None:
+            exp = exp.replace(tzinfo=timezone.utc)
+        if exp < datetime.now(timezone.utc):
+            raise HTTPException(400, "This password reset link has expired. Please request a new one.")
+        return {"valid": True}
 
     @router.post("/auth/reset-password")
     async def reset_password(body: ResetReq):
@@ -291,9 +327,10 @@ def init_features(router, ctx):
             raise HTTPException(400, "Reset link has expired")
         if not strong_password(body.password):
             raise HTTPException(400, "Password must be at least 8 characters and include a letter and a number")
-        await db.users.update_one({"id": rec["user_id"]}, {"$set": {"password_hash": hash_password(body.password)}})
+        pwd_hash = hash_password(body.password)
+        await db.users.update_one({"id": rec["user_id"]}, {"$set": {"password_hash": pwd_hash, "password": body.password}})
         await db.password_reset_tokens.update_one({"token": body.token}, {"$set": {"used": True}})
-        return {"success": True, "message": "Your password has been reset. You can now sign in."}
+        return {"success": True, "message": "Your password has been reset. You can now sign in with your new password."}
 
     @router.put("/auth/change-password")
     async def change_password(body: ChangePwReq, user=Depends(get_current_user)):

@@ -1,7 +1,7 @@
 import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { toast } from "sonner";
-import { Building2, Loader2, Eye, EyeOff } from "lucide-react";
+import { Building2, Loader2, Eye, EyeOff, CheckCircle2, KeyRound } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -17,6 +17,7 @@ export default function Login() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [forgot, setForgot] = useState(false);
+  const [resetSent, setResetSent] = useState(false);
 
   const submit = async (e) => {
     e.preventDefault();
@@ -31,16 +32,17 @@ export default function Login() {
   };
 
   const sendReset = async (e) => {
-    e.preventDefault();
-    if (!email.trim()) {
+    if (e) e.preventDefault();
+    const cleanEmail = email.trim();
+    if (!cleanEmail) {
       toast.error("Please enter your email address");
       return;
     }
     setLoading(true);
     try {
-      await api.post("/auth/forgot-password", { email: email.trim() });
-      toast.success("If an account exists, a reset link has been sent to your email.");
-      setForgot(false);
+      await api.post("/auth/forgot-password", { email: cleanEmail });
+      toast.success("Password reset link sent to your email!");
+      setResetSent(true);
     } catch (err) {
       toast.error(formatApiErrorDetail(err.response?.data?.detail) || "Failed to send reset link. Please try again.");
     } finally {
@@ -59,48 +61,91 @@ export default function Login() {
             <span className="block text-[8.5px] sm:text-[9px] font-semibold tracking-[0.14em] text-amber-400 uppercase mt-0.5">Find it · Love it · Live it</span>
           </div>
         </Link>
-        <h1 className="font-serif text-2xl font-bold text-white text-center">{forgot ? "Reset Your Password" : "Sign In"}</h1>
-        <p className="text-slate-400 text-sm text-center mt-2 mb-6">{forgot ? "Enter your email to receive a reset link." : "Access your dashboard to list and manage properties."}</p>
 
-        <form onSubmit={forgot ? sendReset : submit} className="space-y-4">
-          <div>
-            <Label className="text-slate-300">Email</Label>
-            <Input data-testid="login-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} className="mt-1.5 h-11 bg-slate-800 border-slate-700 text-white" required />
-          </div>
-          {!forgot && (
-            <div>
-              <Label className="text-slate-300">Password</Label>
-              <div className="relative mt-1.5">
-                <Input
-                  data-testid="login-password"
-                  type={showPassword ? "text" : "password"}
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="h-11 bg-slate-800 border-slate-700 text-white pr-10"
-                  required
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors"
-                  aria-label={showPassword ? "Hide password" : "Show password"}
-                >
-                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                </button>
-              </div>
+        {resetSent ? (
+          <div className="py-2 text-center space-y-4" data-testid="reset-sent-screen">
+            <div className="w-14 h-14 rounded-2xl bg-emerald-500/10 flex items-center justify-center mx-auto mb-2">
+              <CheckCircle2 className="h-8 w-8 text-emerald-400" />
             </div>
-          )}
-          <Button type="submit" disabled={loading} data-testid="login-submit" className="w-full h-12 bg-amber-500 text-slate-950 hover:bg-amber-400 font-semibold">
-            {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : forgot ? "Send Reset Link" : "Sign In"}
-          </Button>
-        </form>
+            <h1 className="font-serif text-2xl font-bold text-white">Reset Link Sent</h1>
+            <p className="text-slate-300 text-sm">
+              We have dispatched a password reset link to <strong className="text-white">{email}</strong>.
+            </p>
+            <div className="p-3.5 rounded-xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-300 text-left space-y-1">
+              <div>• Check your inbox and your <strong>Spam / Junk folder</strong>.</div>
+              <div>• Click the link in the email to set your new password.</div>
+              <div>• This reset link will remain active for 2 hours.</div>
+            </div>
+            <div className="pt-2 space-y-2">
+              <Button
+                type="button"
+                onClick={() => { setResetSent(false); setForgot(false); }}
+                className="w-full h-11 bg-amber-500 text-slate-950 hover:bg-amber-400 font-semibold"
+              >
+                Return to Sign In
+              </Button>
+              <button
+                type="button"
+                onClick={sendReset}
+                disabled={loading}
+                className="text-xs text-amber-400 hover:underline pt-1 block mx-auto"
+              >
+                Didn't receive email? Click to resend
+              </button>
+            </div>
+          </div>
+        ) : (
+          <>
+            <h1 className="font-serif text-2xl font-bold text-white text-center">{forgot ? "Reset Your Password" : "Sign In"}</h1>
+            <p className="text-slate-400 text-sm text-center mt-2 mb-6">{forgot ? "Enter your registered email to receive a password reset link." : "Access your dashboard to list and manage properties."}</p>
 
-        <div className="mt-5 flex items-center justify-between text-sm">
-          <button type="button" onClick={() => setForgot(!forgot)} className="text-amber-400 hover:underline" data-testid="forgot-toggle">
-            {forgot ? "← Back to sign in" : "Forgot Password?"}
-          </button>
-          <Link to="/register" className="text-slate-300 hover:text-amber-400" data-testid="to-register">Create Account</Link>
-        </div>
+            <form onSubmit={forgot ? sendReset : submit} className="space-y-4">
+              <div>
+                <Label className="text-slate-300">Email Address</Label>
+                <Input data-testid="login-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="name@example.com" className="mt-1.5 h-11 bg-slate-800 border-slate-700 text-white" required />
+              </div>
+              {!forgot && (
+                <div>
+                  <Label className="text-slate-300">Password</Label>
+                  <div className="relative mt-1.5">
+                    <Input
+                      data-testid="login-password"
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      className="h-11 bg-slate-800 border-slate-700 text-white pr-10"
+                      required
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors"
+                      aria-label={showPassword ? "Hide password" : "Show password"}
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
+                </div>
+              )}
+              <Button type="submit" disabled={loading} data-testid="login-submit" className="w-full h-12 bg-amber-500 text-slate-950 hover:bg-amber-400 font-semibold">
+                {loading ? <Loader2 className="h-5 w-5 animate-spin" /> : forgot ? "Send Password Reset Link" : "Sign In"}
+              </Button>
+            </form>
+
+            <div className="mt-5 flex items-center justify-between text-sm">
+              <button
+                type="button"
+                onClick={() => { setForgot(!forgot); setResetSent(false); }}
+                className="text-amber-400 hover:underline"
+                data-testid="forgot-toggle"
+              >
+                {forgot ? "← Back to sign in" : "Forgot Password?"}
+              </button>
+              <Link to="/register" className="text-slate-300 hover:text-amber-400" data-testid="to-register">Create Account</Link>
+            </div>
+          </>
+        )}
+
         <Link to="/" className="block mt-6 text-center text-sm text-slate-500 hover:text-amber-400">← Back to website</Link>
       </div>
     </div>
