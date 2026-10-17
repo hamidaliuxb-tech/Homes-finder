@@ -103,15 +103,14 @@ export default function PropertyDetail() {
   const contactWhatsapp = property.agent_whatsapp || property.agent_mobile || property.landlord_mobile || property.contact_whatsapp || property.contact_mobile || settings?.contact?.whatsapp || "971501184777";
   const contactEmail = property.agent_email || property.landlord_email || property.contact_email || settings?.contact?.email || "enquiries@homesfinder.ae";
 
-  // Agency & Regulatory Details (Requirement 1 & 2)
-  const agencyName = property.agency_name || "Homes Finder Real Estate";
-  const zoneName = property.zone || (property.community ? `${property.community}` : (property.emirate ? `${property.emirate} Freehold Zone` : "Freehold Zone"));
+  // Agency & Regulatory Details (Production-Ready - Authentic Data Only)
+  const agencyName = property.agency_name || property.company || settings?.brand_name || "Homes Finder Real Estate";
+  const zoneName = property.zone || property.community || property.location || (property.emirate ? `${property.emirate} Freehold Zone` : "");
   const ownershipType = property.ownership_type || "Freehold";
-  const reraPermit = property.rera_number || property.permit_number || (property.reference ? `RERA-${property.reference}` : "RERA-VERIFIED");
-  const brnNumber = property.brn || property.agent_brn || "BRN-54912";
-  const ornNumber = property.orn || "ORN-32890";
-  const dldPermit = property.dld_permit_number || property.permit_number || (property.reference ? `DLD-${property.reference}` : "DLD-PERMIT");
-  const displayRefId = refId || property.reference || (property.id ? `DREL-${property.id.slice(0, 5).toUpperCase()}` : "DREL-13029");
+  const reraPermit = property.rera_number || property.permit_number || "";
+  const brnNumber = property.brn || property.agent_brn || "";
+  const ornNumber = property.orn || "";
+  const dldPermit = property.dld_permit_number || "";
   const permitUrl = property.dld_permit_number
     ? `https://dubailand.gov.ae/en/eservices/verify-permit/?permit=${encodeURIComponent(property.dld_permit_number)}`
     : (typeof window !== "undefined" && window.location ? window.location.href : `https://homesfinder.ae/property/${property.slug || property.id || ""}`);
@@ -281,15 +280,17 @@ export default function PropertyDetail() {
                 {/* Left side details */}
                 <div className="md:col-span-8 lg:col-span-9 space-y-4 text-sm">
                   {/* Zone Name */}
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-1.5 text-slate-700 font-medium">
-                      <span>Zone Name</span>
-                      <span title="Dubai Land Department Zone" className="text-slate-400 hover:text-slate-600 cursor-pointer">
-                        <Info className="h-4 w-4" />
-                      </span>
+                  {zoneName && (
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-1.5 text-slate-700 font-medium">
+                        <span>Zone Name</span>
+                        <span title="Dubai Land Department Zone" className="text-slate-400 hover:text-slate-600 cursor-pointer">
+                          <Info className="h-4 w-4" />
+                        </span>
+                      </div>
+                      <span className="font-medium text-slate-900 text-right">{zoneName}</span>
                     </div>
-                    <span className="font-medium text-slate-900 text-right">{zoneName}</span>
-                  </div>
+                  )}
 
                   {/* Registered Agency */}
                   <div className="flex items-center justify-between gap-4">
@@ -302,35 +303,15 @@ export default function PropertyDetail() {
                     <span className="font-medium text-slate-900 uppercase text-right">{agencyName}</span>
                   </div>
 
-                  {/* RERA */}
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-1.5 text-slate-700 font-medium">
-                      <span>RERA</span>
-                      <span title="Real Estate Regulatory Agency Registration" className="text-slate-400 hover:text-slate-600 cursor-pointer">
-                        <Info className="h-4 w-4" />
-                      </span>
-                    </div>
-                    <span className="font-medium text-slate-900 text-right">{reraPermit}</span>
-                  </div>
-
                   {/* Reference ID */}
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-1.5 text-slate-700 font-medium">
-                      <span>Reference ID</span>
+                  {refId && (
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-1.5 text-slate-700 font-medium">
+                        <span>Reference ID</span>
+                      </div>
+                      <span className="font-medium text-slate-900 font-mono text-right">{refId}</span>
                     </div>
-                    <span className="font-medium text-slate-900 font-mono text-right">{refId || displayRefId}</span>
-                  </div>
-
-                  {/* BRN (DLD) */}
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-1.5 text-slate-700 font-medium">
-                      <span>BRN (DLD)</span>
-                      <span title="Broker Registration Number" className="text-slate-400 hover:text-slate-600 cursor-pointer">
-                        <Info className="h-4 w-4" />
-                      </span>
-                    </div>
-                    <span className="font-medium text-slate-900 font-mono text-right">{brnNumber}</span>
-                  </div>
+                  )}
 
                   {/* Ownership Type */}
                   <div className="flex items-center justify-between gap-4">
@@ -342,6 +323,45 @@ export default function PropertyDetail() {
                     </div>
                     <span className="font-semibold text-emerald-700 text-right">{ownershipType}</span>
                   </div>
+
+                  {/* RERA - Only when available */}
+                  {reraPermit && (
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-1.5 text-slate-700 font-medium">
+                        <span>RERA</span>
+                        <span title="Real Estate Regulatory Agency Registration" className="text-slate-400 hover:text-slate-600 cursor-pointer">
+                          <Info className="h-4 w-4" />
+                        </span>
+                      </div>
+                      <span className="font-medium text-slate-900 font-mono text-right">{reraPermit}</span>
+                    </div>
+                  )}
+
+                  {/* BRN (DLD) - Only when available */}
+                  {brnNumber && (
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-1.5 text-slate-700 font-medium">
+                        <span>BRN (DLD)</span>
+                        <span title="Broker Registration Number" className="text-slate-400 hover:text-slate-600 cursor-pointer">
+                          <Info className="h-4 w-4" />
+                        </span>
+                      </div>
+                      <span className="font-medium text-slate-900 font-mono text-right">{brnNumber}</span>
+                    </div>
+                  )}
+
+                  {/* Agency ORN - Only when available */}
+                  {ornNumber && (
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-1.5 text-slate-700 font-medium">
+                        <span>Agency ORN</span>
+                        <span title="Office Registration Number" className="text-slate-400 hover:text-slate-600 cursor-pointer">
+                          <Info className="h-4 w-4" />
+                        </span>
+                      </div>
+                      <span className="font-medium text-slate-900 font-mono text-right">{ornNumber}</span>
+                    </div>
+                  )}
 
                   {/* DLD Permit / Trakheesi */}
                   {dldPermit && (

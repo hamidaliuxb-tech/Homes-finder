@@ -120,7 +120,7 @@ export default function AddProperty() {
     city: "", building_name: "", location: "", price: "", price_period: "per year", rental_frequency: "Yearly",
     bedrooms: "", bathrooms: "", area: "", plot_area: "", furnished: "unfurnished", parking_spaces: "",
     status: "ready", availability_date: "", developer: "", completion_date: "", payment_plan: "",
-    ownership_type: "Freehold", agency_name: "", zone: "", rera_number: "", brn: "", orn: "32890", dld_permit_number: "", permit_qr_code: "",
+    ownership_type: "Freehold", agency_name: "", zone: "", rera_number: "", brn: "", orn: "", dld_permit_number: "", permit_qr_code: "",
     agent_name: "", agent_mobile: "", agent_whatsapp: "", agent_email: "",
     landlord_name: "", landlord_mobile: "", landlord_email: "",
     service_charges: "", rental_yield: "", amenities: [], images: [],
